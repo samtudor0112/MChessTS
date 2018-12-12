@@ -45,4 +45,13 @@ public class BoardPosition {
     public int getCoordinatePosition() {
         return 10 * column + row;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof BoardPosition) {
+            BoardPosition pos = (BoardPosition) obj;
+            return pos.getCoordinatePosition() == this.getCoordinatePosition();
+        }
+        return false;
+    }
 }
