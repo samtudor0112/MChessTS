@@ -46,6 +46,14 @@ public class BoardPosition {
         return 10 * column + row;
     }
 
+    public int getRow() {
+        return row;
+    }
+
+    public int getColumn() {
+        return column;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof BoardPosition) {

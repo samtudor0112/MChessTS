@@ -51,7 +51,8 @@ public class Move {
                 queensideCastlePosition = new BoardPosition(2, 7);
             }
         } catch (InvalidBoardPositionException e) {
-            // this will never happen
+            // This should never happen
+            System.out.println("Something's wrong!");
             return;
         }
         if (!specialMove.equals("Castling") || piece.getPiece() != Piece.KING
@@ -116,6 +117,10 @@ public class Move {
 
     public BoardPosition getNewPosition() {
         return newPosition;
+    }
+
+    public boolean getTaking() {
+        return taking;
     }
 
     public String getOldPositionCoordinate() {
