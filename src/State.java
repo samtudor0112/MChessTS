@@ -18,15 +18,15 @@ public class State {
     public static final int QUEENSIDE_CASTLE = 2;
     public static final int NO_CASTLE = 3;
 
-    private HashMap<ColouredPiece, BoardPosition> board;
+    private Board board;
     private PlayerColour turn;
     private int gameStatus;
     private ArrayList<Move> moveList;
     private int whiteCastlingStatus;
     private int blackCastlingStatus;
 
-    public State(HashMap<ColouredPiece, BoardPosition> board, PlayerColour turn, ArrayList<Move> moveList) {
-        this.board = (HashMap<ColouredPiece, BoardPosition>) board.clone();
+    public State(Board board, PlayerColour turn, ArrayList<Move> moveList) {
+        this.board = board.clone();
         this.turn = turn;
         this.moveList = moveList;
         updateCastlingStatuses();
@@ -35,7 +35,7 @@ public class State {
 
     // Game start state
     public State() {
-        board = State.generateStartBoard();
+        board = new Board();
         turn = PlayerColour.WHITE;
         moveList = new ArrayList<>();
         gameStatus = IN_PROGRESS;
@@ -45,9 +45,9 @@ public class State {
 
     // Called by clone method so executeMove doesn't take forever by having to call updateCastlingStatus(). No need to
     // evaluate status since we're cloning a legal state.
-    private State(HashMap<ColouredPiece, BoardPosition> board, PlayerColour turn, ArrayList<Move> moveList,
+    private State(Board board, PlayerColour turn, ArrayList<Move> moveList,
                  int whiteCastlingStatus, int blackCastlingStatus, int gameStatus) {
-        this.board = (HashMap<ColouredPiece, BoardPosition>) board.clone();
+        this.board = board.clone();
         this.turn = turn;
         this.moveList = moveList;
         this.whiteCastlingStatus = whiteCastlingStatus;
@@ -57,59 +57,23 @@ public class State {
 
     public State executeMove(Move move) {
         State newState = this.clone();
-        HashMap<ColouredPiece, BoardPosition> newBoard = newState.getBoard();
+        Board newBoard = newState.getBoard();
         if (move.getSpecialMove() == null) {
-            if (newState.getPieceAtPosition(move.getNewPosition()) != null) {
-                newBoard.remove(newState.getPieceAtPosition(move.getNewPosition()));
-            }
-            if (newState.getPieceAtPosition(move.getNewPosition()) == null && move.getTaking()) {
-                // En passant
-                int direction = move.getPiece().getColour() == PlayerColour.WHITE ? 1 : -1;
-                BoardPosition enpassantPosition;
-                try {
-                    enpassantPosition = new BoardPosition(move.getNewPosition().getColumn(),
-                            move.getNewPosition().getRow() + direction);
-                } catch (InvalidBoardPositionException e) {
-                    // This should never happen
-                    System.out.println("Something's wrong!");
-                    return null;
-                }
-                newBoard.remove(newState.getPieceAtPosition(enpassantPosition));
-            }
-            newBoard.put(move.getPiece(), move.getNewPosition());
+            newBoard.moveAndTakePiece(move.getPiece(), move.getNewPosition());
+        } else if (move.getSpecialMove().equals("En passant")) {
+            newBoard.moveAndTakePiece(move.getPiece(), move.getTakePosition());
+            newBoard.moveAndTakePiece(move.getPiece(), move.getNewPosition());
         } else if (move.getSpecialMove().equals("Castling")) {
-            newBoard.put(move.getPiece(), move.getNewPosition());
-            BoardPosition castlingRookPosition;
-            BoardPosition newCastlingRookPosition;
-            try {
-                int row = move.getPiece().getColour() == PlayerColour.WHITE ? 0 : 7;
-                if (move.getNewPosition().equals(new BoardPosition(6, row))) {
-                    // Kingside castle
-                    castlingRookPosition = new BoardPosition(7, row);
-                    newCastlingRookPosition = new BoardPosition(5, row);
-                } else {
-                    // Queenside castle
-                    castlingRookPosition = new BoardPosition(0, row);
-                    newCastlingRookPosition = new BoardPosition(3, row);
-                }
-            } catch (InvalidBoardPositionException e) {
-                // This should never happen
-                System.out.println("Something's wrong!");
-                return null;
-            }
-            ColouredPiece castlingRook = newState.getPieceAtPosition(castlingRookPosition);
-            newBoard.put(castlingRook, newCastlingRookPosition);
+            newBoard.moveAndTakePiece(move.getPiece(), move.getNewPosition());
+            newBoard.moveAndTakePiece(move.getCastlingPiece(), move.getCastlingPosition());
         } else {
             // promotion
-            if (newState.getPieceAtPosition(move.getNewPosition()) != null) {
-                newBoard.remove(newState.getPieceAtPosition(move.getNewPosition()));
-            }
-            newBoard.remove(move.getPiece());
-            newBoard.put(move.getPromotionTo(), move.getNewPosition());
+            newBoard.moveAndTakePiece(move.getPiece(), move.getNewPosition());
+            newBoard.replacePieceAtPosition(move.getPromotionTo(), move.getNewPosition());
         }
         newState.getMoveList().add(move);
         newState.updateCastlingStatusesFromLastMove();
-        newState.setTurn(newState.getTurn() == PlayerColour.WHITE ? PlayerColour.BLACK : PlayerColour.WHITE);
+        newState.changeTurn();
         newState.updateGameStatus();
         return newState;
     }
@@ -134,68 +98,16 @@ public class State {
         // TODO
     }
 
-    public ColouredPiece getPieceAtPosition(BoardPosition position) {
-        for (Map.Entry<ColouredPiece, BoardPosition> entry : board.entrySet()) {
-            if (entry.getValue().equals(position)) {
-                return entry.getKey();
-            }
-        }
-        // No piece at that position: return null
-        return null;
+    public void changeTurn() {
+        turn = turn == PlayerColour.WHITE ? PlayerColour.BLACK : PlayerColour.WHITE;
     }
 
-    private static HashMap<ColouredPiece, BoardPosition> generateStartBoard() {
-        HashMap<ColouredPiece, BoardPosition> board = new HashMap<>();
-
-        try {
-            // Pawns
-            for (int column = 0; column < 8; column++) {
-                board.put(new ColouredPiece(Piece.PAWN, PlayerColour.WHITE), new BoardPosition(column, 1));
-                board.put(new ColouredPiece(Piece.PAWN, PlayerColour.BLACK), new BoardPosition(column, 6));
-            }
-
-            // Kings
-            board.put(new ColouredPiece(Piece.KING, PlayerColour.WHITE), new BoardPosition(4, 0));
-            board.put(new ColouredPiece(Piece.KING, PlayerColour.BLACK), new BoardPosition(4, 7));
-
-            // Queens
-            board.put(new ColouredPiece(Piece.QUEEN, PlayerColour.WHITE), new BoardPosition(3, 0));
-            board.put(new ColouredPiece(Piece.QUEEN, PlayerColour.BLACK), new BoardPosition(3, 7));
-
-            // Bishops
-            board.put(new ColouredPiece(Piece.BISHOP, PlayerColour.WHITE), new BoardPosition(2, 0));
-            board.put(new ColouredPiece(Piece.BISHOP, PlayerColour.BLACK), new BoardPosition(2, 7));
-            board.put(new ColouredPiece(Piece.BISHOP, PlayerColour.WHITE), new BoardPosition(5, 0));
-            board.put(new ColouredPiece(Piece.BISHOP, PlayerColour.BLACK), new BoardPosition(5, 7));
-
-            // Knights
-            board.put(new ColouredPiece(Piece.KNIGHT, PlayerColour.WHITE), new BoardPosition(1, 0));
-            board.put(new ColouredPiece(Piece.KNIGHT, PlayerColour.BLACK), new BoardPosition(1, 7));
-            board.put(new ColouredPiece(Piece.KNIGHT, PlayerColour.WHITE), new BoardPosition(6, 0));
-            board.put(new ColouredPiece(Piece.KNIGHT, PlayerColour.BLACK), new BoardPosition(6, 7));
-
-            // Rooks
-            board.put(new ColouredPiece(Piece.ROOK, PlayerColour.WHITE), new BoardPosition(0, 0));
-            board.put(new ColouredPiece(Piece.ROOK, PlayerColour.BLACK), new BoardPosition(0, 7));
-            board.put(new ColouredPiece(Piece.ROOK, PlayerColour.WHITE), new BoardPosition(7, 0));
-            board.put(new ColouredPiece(Piece.ROOK, PlayerColour.BLACK), new BoardPosition(7, 7));
-        } catch (InvalidBoardPositionException e) {
-            // This should never happen
-            return null;
-        }
-        return board;
-    }
-
-    public HashMap<ColouredPiece, BoardPosition> getBoard() {
+    public Board getBoard() {
         return board;
     }
 
     public PlayerColour getTurn() {
         return turn;
-    }
-
-    public void setTurn(PlayerColour colour) {
-        turn = colour;
     }
 
     public int getGameStatus() {

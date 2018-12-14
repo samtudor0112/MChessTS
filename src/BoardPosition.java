@@ -42,6 +42,10 @@ public class BoardPosition {
         return Character.toString(column) + Character.toString(row);
     }
 
+    public BoardPosition createAddedPosition(int deltacolumn, int deltarow) throws InvalidBoardPositionException {
+        return new BoardPosition(column + deltacolumn, row + deltarow);
+    }
+
     public int getCoordinatePosition() {
         return 10 * column + row;
     }
