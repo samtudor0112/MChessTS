@@ -1,3 +1,5 @@
+package chessboard;
+
 /**
  * The two colours a player can be, white or black.
  */

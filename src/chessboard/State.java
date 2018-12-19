@@ -1,7 +1,6 @@
-import java.awt.*;
+package chessboard;
+
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Stores the current state of the match, including the board state, who's turn
@@ -11,7 +10,7 @@ public class State {
     public static final int IN_PROGRESS = 0;
     public static final int WHITE_WIN = 1;
     public static final int BLACK_WIN = 2;
-    public static final int STALEMATE = 3;
+    public static final int DRAW = 3;
 
     public static final int EITHER_CASTLE = 0;
     public static final int KINGSIDE_CASTLE = 1;
@@ -120,5 +119,20 @@ public class State {
 
     public State clone() {
         return new State(board, turn, moveList, whiteCastlingStatus, blackCastlingStatus, gameStatus);
+    }
+
+    public Move getMoveFromString(String stringMove) throws InvalidMoveException {
+        Move move = null;
+        if (turn == PlayerColour.WHITE) {
+            // TODO
+        } else {
+            // Black
+            // TODO
+        }
+        if (getAllLegalMoves().contains(move)) {
+            return move;
+        } else {
+            throw new InvalidMoveException("Invalid move!");
+        }
     }
 }

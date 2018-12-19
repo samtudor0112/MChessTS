@@ -1,3 +1,5 @@
+package chessboard;
+
 /**
  * A single move
  */
@@ -169,6 +171,14 @@ public class Move {
         }
 
         return outString;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Move) {
+            return getString().equals(((Move)obj).getString());
+        }
+        return false;
     }
 
     public ColouredPiece getPiece() {

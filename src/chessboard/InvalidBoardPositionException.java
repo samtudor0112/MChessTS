@@ -1,3 +1,5 @@
+package chessboard;
+
 /**
  * Thrown when an invalid board position is initialized
  */

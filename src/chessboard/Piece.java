@@ -1,5 +1,6 @@
+package chessboard;
+
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * Represents one piece on the chessboard
