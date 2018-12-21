@@ -1,6 +1,7 @@
 package chessboard;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * Stores the current state of the match, including the board state, who's turn
@@ -21,14 +22,18 @@ public class State {
     private PlayerColour turn;
     private int gameStatus;
     private ArrayList<Move> moveList;
+    private ArrayList<Move> allLegalMoves;
+
     private int whiteCastlingStatus;
     private int blackCastlingStatus;
+
 
     public State(Board board, PlayerColour turn, ArrayList<Move> moveList) {
         this.board = board.clone();
         this.turn = turn;
         this.moveList = moveList;
         updateCastlingStatuses();
+        updateLegalMoves();
         updateGameStatus();
     }
 
@@ -37,67 +42,228 @@ public class State {
         board = new Board();
         turn = PlayerColour.WHITE;
         moveList = new ArrayList<>();
-        gameStatus = IN_PROGRESS;
         whiteCastlingStatus = EITHER_CASTLE;
         blackCastlingStatus = EITHER_CASTLE;
+        updateLegalMoves();
+        gameStatus = IN_PROGRESS;
     }
 
     // Called by clone method so executeMove doesn't take forever by having to call updateCastlingStatus(). No need to
     // evaluate status since we're cloning a legal state.
     private State(Board board, PlayerColour turn, ArrayList<Move> moveList,
-                 int whiteCastlingStatus, int blackCastlingStatus, int gameStatus) {
+                 int whiteCastlingStatus, int blackCastlingStatus, int gameStatus, ArrayList<Move> allLegalMoves) {
         this.board = board.clone();
         this.turn = turn;
         this.moveList = moveList;
         this.whiteCastlingStatus = whiteCastlingStatus;
         this.blackCastlingStatus = blackCastlingStatus;
         this.gameStatus = gameStatus;
+        this.allLegalMoves = allLegalMoves;
     }
 
     public State executeMove(Move move) {
         State newState = this.clone();
         Board newBoard = newState.getBoard();
         if (move.getSpecialMove() == null) {
-            newBoard.moveAndTakePiece(move.getPiece(), move.getNewPosition());
+            newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
         } else if (move.getSpecialMove().equals("En passant")) {
-            newBoard.moveAndTakePiece(move.getPiece(), move.getTakePosition());
-            newBoard.moveAndTakePiece(move.getPiece(), move.getNewPosition());
+            newBoard.moveAndTakePiece(move.getColouredPiece(), move.getTakePosition());
+            newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
         } else if (move.getSpecialMove().equals("Castling")) {
-            newBoard.moveAndTakePiece(move.getPiece(), move.getNewPosition());
+            newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
             newBoard.moveAndTakePiece(move.getCastlingPiece(), move.getCastlingPosition());
         } else {
             // promotion
-            newBoard.moveAndTakePiece(move.getPiece(), move.getNewPosition());
+            newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
             newBoard.replacePieceAtPosition(move.getPromotionTo(), move.getNewPosition());
         }
         newState.getMoveList().add(move);
-        newState.updateCastlingStatusesFromLastMove();
         newState.changeTurn();
+        newState.updateCastlingStatusesFromLastMove();
+        newState.updateLegalMoves();
         newState.updateGameStatus();
         return newState;
     }
 
     public ArrayList<Move> getAllLegalMoves() {
-        // TODO
-        return null;
+        return new ArrayList<>(Collections.unmodifiableList(allLegalMoves));
     }
 
-    public void updateGameStatus() {
+    // Determines whether the player who's turn it is has lost or drawn the game. Note: you can never win as it becomes
+    // your turn.
+    private void updateGameStatus() {
+        // Determine whether a checkmate or stalemate has occurred
+        if (allLegalMoves.size() == 0) {
+            // Determine whether the king is in check or not
+            if (true/* TODO IS KING IN CHECK */) {
+                if (turn == PlayerColour.WHITE) {
+                    gameStatus = BLACK_WIN;
+                } else {
+                    // Black
+                    gameStatus = WHITE_WIN;
+                }
+            } else {
+                gameStatus = DRAW;
+            }
+        }
+        // Determine whether either player has sufficient material to mate
         // TODO
+
     }
 
     // Since this method is called every time a move is executed, we only need to check the very last move to ensure
     // the castling statuses are correct.
-    public void updateCastlingStatusesFromLastMove() {
+    private void updateCastlingStatusesFromLastMove() {
+        updateCastlingStatusFromSingleMove(moveList.get(moveList.size() - 1));
+
+    }
+
+    private void updateCastlingStatusFromSingleMove(Move move) {
+        try {
+            // The only way a player can no longer castle is by moving their rook, moving their king or by having their rook taken.
+            if (move.getColouredPiece().getColour() == PlayerColour.WHITE) {
+                if (whiteCastlingStatus == NO_CASTLE) {
+                    // Can't ever castle if you couldn't previously
+                    return;
+                }
+
+                if (move.getSpecialMove().equals("Castling")) {
+                    // Can't castle again once you've castled
+                    whiteCastlingStatus = NO_CASTLE;
+                    return;
+                }
+
+                if (move.getColouredPiece().getPiece() == Piece.KING) {
+                    // Can't castle if you move the king
+                    whiteCastlingStatus = NO_CASTLE;
+                    return;
+                }
+
+                if (move.getColouredPiece().getPiece() == Piece.ROOK) {
+                    // Can't kingside castle if you move the rook on a8
+                    if (move.getOldPosition() == new BoardPosition(0, 7)) {
+                        if (whiteCastlingStatus == KINGSIDE_CASTLE) {
+                            whiteCastlingStatus = NO_CASTLE;
+                            return;
+                        } else {
+                            whiteCastlingStatus = QUEENSIDE_CASTLE;
+                            return;
+                        }
+                    }
+                    // Can't queenside castle if you move the rook on a1
+                    if (move.getOldPosition() == new BoardPosition(0, 0)) {
+                        if (whiteCastlingStatus == QUEENSIDE_CASTLE) {
+                            whiteCastlingStatus = NO_CASTLE;
+                            return;
+                        } else {
+                            whiteCastlingStatus = KINGSIDE_CASTLE;
+                            return;
+                        }
+                    }
+                }
+
+                // Opposition can't kingside castle if you take their rook on h8
+                if (move.getTakePosition() == new BoardPosition(7, 7)) {
+                    if (blackCastlingStatus == KINGSIDE_CASTLE) {
+                        blackCastlingStatus = NO_CASTLE;
+                        return;
+                    } else {
+                        blackCastlingStatus = QUEENSIDE_CASTLE;
+                        return;
+                    }
+                }
+
+                // Opposition can't queenside castle if you take their rook on h1
+                if (move.getTakePosition() == new BoardPosition(7, 0)) {
+                    if (blackCastlingStatus == QUEENSIDE_CASTLE) {
+                        blackCastlingStatus = NO_CASTLE;
+                        return;
+                    } else {
+                        blackCastlingStatus = KINGSIDE_CASTLE;
+                        return;
+                    }
+                }
+
+            } else {
+                // black
+                if (blackCastlingStatus == NO_CASTLE) {
+                    // Can't ever castle if you couldn't previously
+                    return;
+                }
+
+                if (move.getSpecialMove().equals("Castling")) {
+                    // Can't castle again once you've castled
+                    blackCastlingStatus = NO_CASTLE;
+                    return;
+                }
+
+                if (move.getColouredPiece().getPiece() == Piece.KING) {
+                    // Can't castle if you move the king
+                    blackCastlingStatus = NO_CASTLE;
+                    return;
+                }
+
+                if (move.getColouredPiece().getPiece() == Piece.ROOK) {
+                    // Can't kingside castle if you move the rook on h8
+                    if (move.getOldPosition() == new BoardPosition(7, 7)) {
+                        if (blackCastlingStatus == KINGSIDE_CASTLE) {
+                            blackCastlingStatus = NO_CASTLE;
+                            return;
+                        } else {
+                            blackCastlingStatus = QUEENSIDE_CASTLE;
+                            return;
+                        }
+                    }
+                    // Can't queenside castle if you move the rook on h1
+                    if (move.getOldPosition() == new BoardPosition(7, 0)) {
+                        if (blackCastlingStatus == QUEENSIDE_CASTLE) {
+                            blackCastlingStatus = NO_CASTLE;
+                            return;
+                        } else {
+                            blackCastlingStatus = KINGSIDE_CASTLE;
+                            return;
+                        }
+                    }
+                }
+
+                // Opposition can't kingside castle if you take their rook on a8
+                if (move.getTakePosition() == new BoardPosition(0, 7)) {
+                    if (whiteCastlingStatus == KINGSIDE_CASTLE) {
+                        whiteCastlingStatus = NO_CASTLE;
+                        return;
+                    } else {
+                        whiteCastlingStatus = QUEENSIDE_CASTLE;
+                        return;
+                    }
+                }
+
+                // Opposition can't queenside castle if you take their rook on a1
+                if (move.getTakePosition() == new BoardPosition(0, 0)) {
+                    if (whiteCastlingStatus == QUEENSIDE_CASTLE) {
+                        whiteCastlingStatus = NO_CASTLE;
+                        return;
+                    } else {
+                        whiteCastlingStatus = KINGSIDE_CASTLE;
+                        return;
+                    }
+                }
+            }
+        } catch (InvalidBoardPositionException e) {
+            // this should never happen
+            System.out.println("Something's wrong!");
+        }
+    }
+
+    // Checking from scratch is neccessary if a game is imported. No need for speed here.
+    private void updateCastlingStatuses() {
+        moveList.forEach(this::updateCastlingStatusFromSingleMove);
+    }
+
+    private void updateLegalMoves() {
         // TODO
     }
 
-    // Checking from scratch is neccessary if a game is imported.
-    public void updateCastlingStatuses() {
-        // TODO
-    }
-
-    public void changeTurn() {
+    private void changeTurn() {
         turn = turn == PlayerColour.WHITE ? PlayerColour.BLACK : PlayerColour.WHITE;
     }
 
@@ -118,7 +284,7 @@ public class State {
     }
 
     public State clone() {
-        return new State(board, turn, moveList, whiteCastlingStatus, blackCastlingStatus, gameStatus);
+        return new State(board, turn, moveList, whiteCastlingStatus, blackCastlingStatus, gameStatus, allLegalMoves);
     }
 
     public Move getMoveFromString(String stringMove) throws InvalidMoveException {

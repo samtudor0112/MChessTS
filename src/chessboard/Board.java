@@ -1,7 +1,9 @@
 package chessboard;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents the board at any time, containing all the pieces of both colours
@@ -80,6 +82,10 @@ public class Board {
     public BoardPosition replacePieceAtPosition(ColouredPiece piece, BoardPosition position) {
         boardMap.remove(getPieceAtPosition(position));
         return boardMap.put(piece, position);
+    }
+
+    public Set<ColouredPiece> getPieces() {
+        return boardMap.keySet();
     }
 
     public Board clone() {

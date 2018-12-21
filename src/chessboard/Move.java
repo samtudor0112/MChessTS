@@ -8,6 +8,9 @@ public class Move {
     private BoardPosition newPosition;
     private boolean taking;
 
+    // Set to check castling
+    private BoardPosition oldPosition;
+
     // Only set when there's ambiguity
     private String oldPositionCoordinate;
 
@@ -29,12 +32,13 @@ public class Move {
     private static BoardPosition queensideCastlePosition;
 
     // A standard piece move
-    public Move(ColouredPiece piece, BoardPosition newPosition, boolean taking) throws InvalidMoveException {
+    public Move(ColouredPiece piece, BoardPosition oldPosition, BoardPosition newPosition, boolean taking) throws InvalidMoveException {
         if (piece.getPiece() == Piece.PAWN) {
             throw new InvalidMoveException("Invalid move!");
         }
 
         this.piece = piece;
+        this.oldPosition = oldPosition;
         this.newPosition = newPosition;
         this.taking = taking;
         if (taking) {
@@ -43,8 +47,9 @@ public class Move {
     }
 
     // Two pieces could move to the same square, or a pawn move
-    public Move(ColouredPiece piece, BoardPosition newPosition, String oldPositionCoordinate, boolean taking) {
+    public Move(ColouredPiece piece, BoardPosition oldPosition, BoardPosition newPosition, String oldPositionCoordinate, boolean taking) {
         this.piece = piece;
+        this.oldPosition = oldPosition;
         this.newPosition = newPosition;
         this.taking = taking;
         this.oldPositionCoordinate = oldPositionCoordinate;
@@ -181,8 +186,12 @@ public class Move {
         return false;
     }
 
-    public ColouredPiece getPiece() {
+    public ColouredPiece getColouredPiece() {
         return piece;
+    }
+
+    public BoardPosition getOldPosition() {
+        return oldPosition;
     }
 
     public BoardPosition getNewPosition() {

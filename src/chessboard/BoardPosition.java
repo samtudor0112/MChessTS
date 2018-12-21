@@ -1,5 +1,7 @@
 package chessboard;
 
+import java.util.ArrayList;
+
 /**
  * Represents a position on a chess board
  */
@@ -8,6 +10,8 @@ public class BoardPosition {
     // 0-7
     private int row;
     private int column;
+
+
 
     public BoardPosition(int column, int row) throws InvalidBoardPositionException {
         setBoardPosition(column, row);
@@ -52,6 +56,10 @@ public class BoardPosition {
         return createAddedPosition(position.getColumn(), position.getRow());
     }
 
+    // Helper useful board square sets
+    public static ArrayList<BoardPosition> lightSquares;
+    public static ArrayList<BoardPosition> darkSquares;
+
     public int getCoordinatePosition() {
         return 10 * column + row;
     }
@@ -71,5 +79,33 @@ public class BoardPosition {
             return pos.getCoordinatePosition() == this.getCoordinatePosition();
         }
         return false;
+    }
+
+    static {
+        try {
+            for (int column = 0; column < 8; column++) {
+                for (int row = 0; row < 8; row++) {
+                    BoardPosition square = new BoardPosition(column, row);
+                    if (column % 2 == 0) {
+                        // Even rows are dark squares
+                        if (row % 2 == 0) {
+                            darkSquares.add(square);
+                        } else {
+                            lightSquares.add(square);
+                        }
+                    } else {
+                        // Even rows are light squares
+                        if (row % 2 == 0) {
+                            lightSquares.add(square);
+                        } else {
+                            darkSquares.add(square);
+                        }
+                    }
+                }
+            }
+        } catch (InvalidBoardPositionException e) {
+            // This will never happen
+            System.out.println("Something's wrong!");
+        }
     }
 }

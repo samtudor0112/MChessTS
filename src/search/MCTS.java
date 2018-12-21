@@ -76,7 +76,7 @@ public class MCTS {
             boardState = boardState.executeMove(getRandomElement(validMoves));
         }
 
-        // Temporary reward function
+        // Temporary basic reward function
         if (boardState.getGameStatus() == State.WHITE_WIN) {
             return ourColour == PlayerColour.WHITE ? 1 : 0;
         } else if (boardState.getGameStatus() == State.BLACK_WIN) {
