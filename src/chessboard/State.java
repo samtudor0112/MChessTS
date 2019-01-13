@@ -1,7 +1,6 @@
 package chessboard;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 /**
  * Stores the current state of the match, including the board state, who's turn
@@ -93,6 +92,7 @@ public class State {
     // your turn.
     private void updateGameStatus() {
         // Determine whether a checkmate or stalemate has occurred
+
         if (allLegalMoves.size() == 0) {
             // Determine whether the king is in check or not
             if (true/* TODO IS KING IN CHECK */) {
@@ -106,8 +106,71 @@ public class State {
                 gameStatus = DRAW;
             }
         }
-        // Determine whether either player has sufficient material to mate
-        // TODO
+
+        // Determine if both sides have invalid material
+        // King vs King
+        HashSet<ColouredPiece> kingKing = new HashSet<>(Arrays.asList(
+                new ColouredPiece(Piece.KING, PlayerColour.WHITE),
+                new ColouredPiece(Piece.KING, PlayerColour.BLACK)));
+        if (board.compareBoardWithPieceList(kingKing)) {
+            gameStatus = DRAW;
+        }
+
+        for (int i = 0; i < 2; i++) {
+            // 0 = white, 1 = black
+            // King vs King Bishop
+            HashSet<ColouredPiece> kingKingBishop = new HashSet<>(Arrays.asList(
+                    new ColouredPiece(Piece.KING, PlayerColour.WHITE),
+                    new ColouredPiece(Piece.KING, PlayerColour.BLACK),
+                    new ColouredPiece(Piece.BISHOP, PlayerColour.values()[i])));
+            if (board.compareBoardWithPieceList(kingKingBishop)) {
+                gameStatus = DRAW;
+            }
+
+            // King vs King Knight
+            HashSet<ColouredPiece> kingKingKnight = new HashSet<>(Arrays.asList(
+                    new ColouredPiece(Piece.KING, PlayerColour.WHITE),
+                    new ColouredPiece(Piece.KING, PlayerColour.BLACK),
+                    new ColouredPiece(Piece.KNIGHT, PlayerColour.values()[i])));
+            if (board.compareBoardWithPieceList(kingKingKnight)) {
+                gameStatus = DRAW;
+            }
+        }
+
+        // King Bishop vs King Bishop (with Bishops on the same colour)
+        HashSet<ColouredPiece> kingKingBishopBishop = new HashSet<>(Arrays.asList(
+                new ColouredPiece(Piece.KING, PlayerColour.WHITE),
+                new ColouredPiece(Piece.KING, PlayerColour.BLACK),
+                new ColouredPiece(Piece.BISHOP, PlayerColour.WHITE),
+                new ColouredPiece(Piece.BISHOP, PlayerColour.BLACK)));
+        if (board.compareBoardWithPieceList(kingKingBishopBishop)) {
+            // Verify that both the bishops are on the same coloured squares
+            Set<ColouredPiece> pieces = board.getPieces();
+            ColouredPiece whiteBishop = null;
+            ColouredPiece blackBishop = null;
+            for (ColouredPiece piece : pieces) {
+                if (piece.getPiece().equals(Piece.BISHOP)) {
+                    if (piece.getColour().equals(PlayerColour.WHITE)) {
+                        whiteBishop = piece;
+                    } else {
+                        blackBishop = piece;
+                    }
+                }
+            }
+
+            if (BoardPosition.lightSquares.contains(board.getPiecesPosition(whiteBishop))) {
+                if (BoardPosition.lightSquares.contains(board.getPiecesPosition(blackBishop))) {
+                    gameStatus = DRAW;
+                }
+            } else {
+                // White bishop is on dark squares
+                if (BoardPosition.darkSquares.contains(board.getPiecesPosition(blackBishop))) {
+                    gameStatus = DRAW;
+                }
+            }
+        }
+
+        // TODO Threefold repetition and 50 move rule
 
     }
 
@@ -120,7 +183,8 @@ public class State {
 
     private void updateCastlingStatusFromSingleMove(Move move) {
         try {
-            // The only way a player can no longer castle is by moving their rook, moving their king or by having their rook taken.
+            // The only way a player can no longer castle is by moving their rook, moving their king or by having their
+            // rook taken.
             if (move.getColouredPiece().getColour() == PlayerColour.WHITE) {
                 if (whiteCastlingStatus == NO_CASTLE) {
                     // Can't ever castle if you couldn't previously

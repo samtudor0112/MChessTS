@@ -12,7 +12,6 @@ public class BoardPosition {
     private int column;
 
 
-
     public BoardPosition(int column, int row) throws InvalidBoardPositionException {
         setBoardPosition(column, row);
     }
