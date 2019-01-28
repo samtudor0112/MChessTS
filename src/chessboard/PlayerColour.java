@@ -5,5 +5,9 @@ package chessboard;
  */
 public enum PlayerColour {
     WHITE,
-    BLACK
+    BLACK;
+
+    public static PlayerColour getOtherColour(PlayerColour colour) {
+        return colour == WHITE ? BLACK : WHITE;
+    }
 }

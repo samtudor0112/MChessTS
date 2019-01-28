@@ -1,6 +1,8 @@
 package chessboard;
 
+import java.lang.reflect.Array;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Stores the current state of the match, including the board state, who's turn
@@ -60,9 +62,8 @@ public class State {
         this.allLegalMoves = allLegalMoves;
     }
 
-    public State executeMove(Move move) {
-        State newState = this.clone();
-        Board newBoard = newState.getBoard();
+    public Board executeMoveOnBoard(Board board, Move move) {
+        Board newBoard = board.clone();
         if (move.getSpecialMove() == null) {
             newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
         } else if (move.getSpecialMove().equals("En passant")) {
@@ -76,6 +77,12 @@ public class State {
             newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
             newBoard.replacePieceAtPosition(move.getPromotionTo(), move.getNewPosition());
         }
+        return newBoard;
+    }
+
+    public State executeMove(Move move) {
+        State newState = this.clone();
+        newState.setBoard(executeMoveOnBoard(board, move));
         newState.getMoveList().add(move);
         newState.changeTurn();
         newState.updateCastlingStatusesFromLastMove();
@@ -95,7 +102,7 @@ public class State {
 
         if (allLegalMoves.size() == 0) {
             // Determine whether the king is in check or not
-            if (true/* TODO IS KING IN CHECK */) {
+            if (isKingInCheck(board, turn)) {
                 if (turn == PlayerColour.WHITE) {
                     gameStatus = BLACK_WIN;
                 } else {
@@ -323,12 +330,121 @@ public class State {
         moveList.forEach(this::updateCastlingStatusFromSingleMove);
     }
 
+    // Generates pseudo legal moves then verifies if the king is in check. To be faster, could just generate legal
+    // moves (though this problem is tricky)
     private void updateLegalMoves() {
+        moveList = new ArrayList<>();
         // TODO
+        // Regular moves
+        // Castling
+        // Promotion
+        // En pessant
+
+        // TODO
+        // Verify each move is legal
+        moveList = (ArrayList<Move>) moveList.stream().filter(m -> isKingInCheck(executeMoveOnBoard(board, m), turn)).collect(Collectors.toList());
+    }
+
+    // Will return if colour's king is in check
+    private static boolean isKingInCheck(Board board, PlayerColour colour) {
+        for (ColouredPiece piece: board.getPieces(PlayerColour.getOtherColour(colour))) {
+            for (ColouredPiece attackedPiece: getAttackedPieces(board, piece)) {
+                if (attackedPiece.getPiece().equals(Piece.KING)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // Will return the list of pieces attacked by this piece. Doesn't include enpessant for pawns.
+    private static ArrayList<ColouredPiece> getAttackedPieces(Board board, ColouredPiece piece) {
+        ArrayList<ColouredPiece> attackedPieces = new ArrayList<>();
+        for (ArrayList<BoardPosition> attackRoute : piece.getAttackRoutes()) {
+            for (BoardPosition relativePosition: attackRoute) {
+                try {
+                    BoardPosition actualPosition = relativePosition.createAddedPosition(board.getPiecesPosition(piece));
+                    ColouredPiece attackedPiece = board.getPieceAtPosition(actualPosition);
+                    if (attackedPiece != null) {
+                        // Once one position has a piece in it, the remainder of the positions in the attackroute are
+                        // not attacked
+                        if (!attackedPiece.getColour().equals(piece.getColour())) {
+                            attackedPieces.add(attackedPiece);
+                        }
+                        break;
+                    }
+                } catch (InvalidBoardPositionException e) {
+                    // The attack route is off the board. No need to check the rest
+                    break;
+                }
+            }
+        }
+        return attackedPieces;
+    }
+
+    // Will return any squares a piece can move to, including takes. Doesn't consider whether this will place it's own
+    // king in check. Doesn't include enpessant for pawns, but does include forward moves. Doesn't including castling.
+    // Does including moving pawns to the last rank.
+    private static ArrayList<BoardPosition> getValidMovePositions(Board board, ColouredPiece piece) {
+        ArrayList<BoardPosition> movePositions = new ArrayList<>();
+        for (ArrayList<BoardPosition> attackRoute : piece.getAttackRoutes()) {
+            for (BoardPosition relativePosition: attackRoute) {
+                try {
+                    BoardPosition actualPosition = relativePosition.createAddedPosition(board.getPiecesPosition(piece));
+                    ColouredPiece attackedPiece = board.getPieceAtPosition(actualPosition);
+                    if (attackedPiece != null) {
+                        // Once one position has a piece in it, the remainder of the positions in the attackroute
+                        // cannot be moved to
+                        if (!attackedPiece.getColour().equals(piece.getColour())) {
+                            // Other coloured piece, we can move here but not the rest of the attackroute
+                            movePositions.add(actualPosition);
+                            break;
+                        } else {
+                            // Own coloured piece, can't move here
+                            break;
+                        }
+                    }
+                    movePositions.add(actualPosition);
+                } catch (InvalidBoardPositionException e) {
+                    // The attack route is off the board. No need to check the rest
+                    break;
+                }
+            }
+        }
+        // Need to manually add pawn movements cuz pawns are dumb
+        if (piece.getPiece().equals(Piece.PAWN)) {
+            BoardPosition forwardOne = null;
+            BoardPosition forwardTwo = null;
+            try {
+                if (piece.getColour().equals(PlayerColour.WHITE)) {
+                    forwardOne = board.getPiecesPosition(piece).createAddedPosition(new BoardPosition(0, 1));
+                    if (board.getPiecesPosition(piece).getRow() == 1) {
+                        forwardTwo = board.getPiecesPosition(piece).createAddedPosition(new BoardPosition(0, 2));
+                    }
+                } else {
+                    // Black
+                    forwardOne = board.getPiecesPosition(piece).createAddedPosition(new BoardPosition(0, -1));
+                    if (board.getPiecesPosition(piece).getRow() == 6) {
+                        forwardTwo = board.getPiecesPosition(piece).createAddedPosition(new BoardPosition(0, -2));
+                    }
+                }
+            } catch (InvalidBoardPositionException e) {
+                // This should never happen
+                System.out.println("Something's wrong!");
+                return null;
+            }
+            if (board.getPieceAtPosition(forwardOne) == null) {
+                movePositions.add(forwardOne);
+                if (forwardTwo != null && board.getPieceAtPosition(forwardTwo) == null) {
+                    movePositions.add(forwardTwo);
+                }
+            }
+        }
+        return movePositions;
     }
 
     private void changeTurn() {
-        turn = turn == PlayerColour.WHITE ? PlayerColour.BLACK : PlayerColour.WHITE;
+        turn = PlayerColour.getOtherColour(turn);
     }
 
     public Board getBoard() {
@@ -349,6 +465,11 @@ public class State {
 
     public State clone() {
         return new State(board, turn, moveList, whiteCastlingStatus, blackCastlingStatus, gameStatus, allLegalMoves);
+    }
+
+    // Should only be used by executeMove
+    private void setBoard(Board board) {
+        this.board = board;
     }
 
     public Move getMoveFromString(String stringMove) throws InvalidMoveException {

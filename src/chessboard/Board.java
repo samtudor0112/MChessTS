@@ -1,6 +1,7 @@
 package chessboard;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents the board at any time, containing all the pieces of both colours
@@ -82,6 +83,13 @@ public class Board {
 
     public Set<ColouredPiece> getPieces() {
         return new HashSet<>(boardMap.values());
+    }
+
+    // Returns all pieces of that colour
+    public Set<ColouredPiece> getPieces(PlayerColour colour) {
+        Set<ColouredPiece> pieces = getPieces().stream().filter(p -> p.getColour().equals(colour)).collect(Collectors
+                .toSet());
+        return pieces;
     }
 
     public Board clone() {
