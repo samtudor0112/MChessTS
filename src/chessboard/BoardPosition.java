@@ -56,9 +56,9 @@ public class BoardPosition {
     }
 
     // Helper useful board square sets
-    public static ArrayList<BoardPosition> lightSquares;
-    public static ArrayList<BoardPosition> darkSquares;
-    public static ArrayList<BoardPosition> allSquares;
+    public static ArrayList<BoardPosition> lightSquares = new ArrayList<>();
+    public static ArrayList<BoardPosition> darkSquares = new ArrayList<>();
+    public static ArrayList<BoardPosition> allSquares = new ArrayList<>();
 
     public int getCoordinatePosition() {
         return 10 * column + row;
@@ -79,6 +79,11 @@ public class BoardPosition {
             return pos.getCoordinatePosition() == this.getCoordinatePosition();
         }
         return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return getCoordinatePosition();
     }
 
     static {

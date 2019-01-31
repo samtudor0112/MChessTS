@@ -45,7 +45,7 @@ public class MCTS {
         // Traverse the tree, selecting the best UCT score each time, until we have a leaf node
         while (node.getChildNodes().size() != 0) {
             int parentVisits = node.getVisits();
-            node = Collections.max(node.getChildNodes(), Comparator.comparing(c-> UCTValue(c, parentVisits)));
+            node = Collections.max(node.getChildNodes(), Comparator.comparing(c -> UCTValue(c, parentVisits)));
         }
         // Expand node if it's still in progress
         if (node.getState().getGameStatus() == State.IN_PROGRESS) {

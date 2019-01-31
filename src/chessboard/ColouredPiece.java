@@ -11,7 +11,7 @@ public class ColouredPiece {
     private Piece piece;
     private PlayerColour colour;
 
-    private ArrayList<ArrayList<BoardPosition>> attackRoutes;
+    private ArrayList<ArrayList<BoardPosition>> attackRoutes = new ArrayList<>();
 
     public ColouredPiece(Piece piece, PlayerColour colour) {
         this.piece = piece;
@@ -157,6 +157,7 @@ public class ColouredPiece {
             }
         } catch (InvalidBoardPositionException e) {
             // This should never happen
+            e.printStackTrace();
             System.out.println("Something's wrong!");
             return;
         }

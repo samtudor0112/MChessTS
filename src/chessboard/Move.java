@@ -15,7 +15,7 @@ public class Move {
     private String oldPositionCoordinate;
 
     // Only set for a special move: a castle, or a promotion
-    private String specialMove;
+    private String specialMove = "";
 
     // Only set for a castle
     private ColouredPiece castlingPiece;
@@ -91,7 +91,7 @@ public class Move {
         BoardPosition kingsideCastleRookPosition;
         BoardPosition queensideCastleRookPosition;
         try {
-            if (piece.getColour() == PlayerColour.WHITE) {
+            if (king.getColour() == PlayerColour.WHITE) {
                 kingsideCastlePosition = new BoardPosition(6, 0);
                 queensideCastlePosition = new BoardPosition(2, 0);
                 kingsideCastleRookPosition = new BoardPosition(5, 0);

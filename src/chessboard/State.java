@@ -70,7 +70,7 @@ public class State {
     // Execute a move on a board and returns the new board state. Doesn't modify the original board
     public Board executeMoveOnBoard(Board board, Move move) {
         Board newBoard = board.clone();
-        if (move.getSpecialMove() == null) {
+        if (move.getSpecialMove() == "") {
             newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
         } else if (move.getSpecialMove().equals("En passant")) {
             newBoard.moveAndTakePiece(move.getColouredPiece(), move.getTakePosition());
@@ -382,7 +382,7 @@ public class State {
     // Generates pseudo legal moves then verifies if the king is in check. To be faster, could just generate legal
     // moves (though this problem is tricky)
     private void updateLegalMoves() {
-        moveList = new ArrayList<>();
+        allLegalMoves = new ArrayList<>();
 
         // Regular moves
         for (ColouredPiece piece: board.getPieces(turn)) {
@@ -390,7 +390,7 @@ public class State {
             String oldPositionCoordinate = oldPosition.getStringPosition();
             for (BoardPosition newPosition: getValidMovePositions(board, piece)) {
                 boolean taking = board.getPieceAtPosition(newPosition) != null;
-                moveList.add(new Move(piece, oldPosition, newPosition, oldPositionCoordinate, taking));
+                allLegalMoves.add(new Move(piece, oldPosition, newPosition, oldPositionCoordinate, taking));
             }
         }
 
@@ -424,7 +424,7 @@ public class State {
                                 castlingSquareTwo)), board, allAttackedSquares, oldKingPosition, newKingPosition,
                                 oldRookPosition, newRookPosition);
                         if (castle != null) {
-                            moveList.add(castle);
+                            allLegalMoves.add(castle);
                         }
                     }
                     // Queenside
@@ -440,7 +440,7 @@ public class State {
                                 castlingSquareTwo, castlingSquareThree)), board, allAttackedSquares, oldKingPosition,
                                 newKingPosition, oldRookPosition, newRookPosition);
                         if (castle != null) {
-                            moveList.add(castle);
+                            allLegalMoves.add(castle);
                         }
                     }
                 } else {
@@ -457,7 +457,7 @@ public class State {
                                 castlingSquareTwo)), board, allAttackedSquares, oldKingPosition, newKingPosition,
                                 oldRookPosition, newRookPosition);
                         if (castle != null) {
-                            moveList.add(castle);
+                            allLegalMoves.add(castle);
                         }
                     }
                     // Queenside
@@ -473,7 +473,7 @@ public class State {
                                 castlingSquareTwo, castlingSquareThree)), board, allAttackedSquares, oldKingPosition,
                                 newKingPosition, oldRookPosition, newRookPosition);
                         if (castle != null) {
-                            moveList.add(castle);
+                            allLegalMoves.add(castle);
                         }
                     }
                 }
@@ -484,15 +484,15 @@ public class State {
         }
 
         // Promotion
-        for (Move move: moveList) {
+        for (Move move: allLegalMoves) {
             if (move.getColouredPiece().getPiece().equals(Piece.PAWN)
                     && (move.getNewPosition().getRow() == 0 || move.getNewPosition().getRow() == 7)) {
                 // Remove this invalid move from the list and replace it with promotions
-                moveList.remove(move);
+                allLegalMoves.remove(move);
                 ArrayList<Piece> validPromotes = new ArrayList<>(Arrays.asList(Piece.BISHOP, Piece.KNIGHT, Piece.QUEEN, Piece.ROOK));
                 for (Piece newPiece: validPromotes) {
                     try {
-                        moveList.add(new Move("Promoting", move.getColouredPiece(), move.getNewPosition(),
+                        allLegalMoves.add(new Move("Promoting", move.getColouredPiece(), move.getNewPosition(),
                                 move.getOldPositionCoordinate(), move.isTaking(), new ColouredPiece(newPiece, turn)));
                     } catch (InvalidMoveException e) {
                         e.printStackTrace();
@@ -502,70 +502,72 @@ public class State {
         }
 
         // En passant
-        Move lastMove = moveList.get(moveList.size() - 1);
-        if (turn.equals(PlayerColour.WHITE)) {
-            if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getOldPosition().getRow() == 6
-                    && lastMove.getNewPosition().getRow() == 4) {
-                // We can possibly en passant
-                ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
-                try {
-                    enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() + 1,4));
-                } catch (InvalidBoardPositionException e) {
-                    // This is fine. It means the pawn to be en passant-ed is on the edge of the board
-                }
-                try {
-                    enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() - 1,4));
-                } catch (InvalidBoardPositionException e) {
-                    // This is fine. It means the pawn to be en passant-ed is on the edge of the board
-                }
-                for (BoardPosition enPassantPosition : enPassantPositions) {
-                    ColouredPiece enPassantPawn = board.getPieceAtPosition(enPassantPosition);
-                    if (enPassantPawn != null && Board.comparePieces(enPassantPawn,
-                            new ColouredPiece(Piece.PAWN, PlayerColour.WHITE))) {
-                        try {
-                            BoardPosition newPosition = new BoardPosition(lastMove.getOldPosition().getColumn(), 5);
-                            String oldPositionCoordinate = enPassantPosition.getStringPosition();
-                            moveList.add(new Move("En passant", enPassantPawn, newPosition,
-                                    oldPositionCoordinate, lastMove.getNewPosition()));
-                        } catch (InvalidBoardPositionException e) {
-                            // This should never happen
-                            System.out.println("Something's wrong");
-                        } catch (InvalidMoveException e) {
-                            e.printStackTrace();
+        if (moveList.size() > 0) {
+            Move lastMove = moveList.get(moveList.size() - 1);
+            if (turn.equals(PlayerColour.WHITE)) {
+                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getOldPosition().getRow() == 6
+                        && lastMove.getNewPosition().getRow() == 4) {
+                    // We can possibly en passant
+                    ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
+                    try {
+                        enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() + 1, 4));
+                    } catch (InvalidBoardPositionException e) {
+                        // This is fine. It means the pawn to be en passant-ed is on the edge of the board
+                    }
+                    try {
+                        enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() - 1, 4));
+                    } catch (InvalidBoardPositionException e) {
+                        // This is fine. It means the pawn to be en passant-ed is on the edge of the board
+                    }
+                    for (BoardPosition enPassantPosition : enPassantPositions) {
+                        ColouredPiece enPassantPawn = board.getPieceAtPosition(enPassantPosition);
+                        if (enPassantPawn != null && Board.comparePieces(enPassantPawn,
+                                new ColouredPiece(Piece.PAWN, PlayerColour.WHITE))) {
+                            try {
+                                BoardPosition newPosition = new BoardPosition(lastMove.getOldPosition().getColumn(), 5);
+                                String oldPositionCoordinate = enPassantPosition.getStringPosition();
+                                allLegalMoves.add(new Move("En passant", enPassantPawn, newPosition,
+                                        oldPositionCoordinate, lastMove.getNewPosition()));
+                            } catch (InvalidBoardPositionException e) {
+                                // This should never happen
+                                System.out.println("Something's wrong");
+                            } catch (InvalidMoveException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
-            }
-        } else {
-            // Black
-            if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getOldPosition().getRow() == 1
-                    && lastMove.getNewPosition().getRow() == 3) {
-                // We can possibly en passant
-                ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
-                try {
-                    enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() + 1,3));
-                } catch (InvalidBoardPositionException e) {
-                    // This is fine. It means the pawn to be en passant-ed is on the edge of the board
-                }
-                try {
-                    enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() - 1,3));
-                } catch (InvalidBoardPositionException e) {
-                    // This is fine. It means the pawn to be en passant-ed is on the edge of the board
-                }
-                for (BoardPosition enPassantPosition : enPassantPositions) {
-                    ColouredPiece enPassantPawn = board.getPieceAtPosition(enPassantPosition);
-                    if (enPassantPawn != null && Board.comparePieces(enPassantPawn,
-                            new ColouredPiece(Piece.PAWN, PlayerColour.BLACK))) {
-                        try {
-                            BoardPosition newPosition = new BoardPosition(lastMove.getOldPosition().getColumn(), 2);
-                            String oldPositionCoordinate = enPassantPosition.getStringPosition();
-                            moveList.add(new Move("En passant", enPassantPawn, newPosition,
-                                    oldPositionCoordinate, lastMove.getNewPosition()));
-                        } catch (InvalidBoardPositionException e) {
-                            // This should never happen
-                            System.out.println("Something's wrong");
-                        } catch (InvalidMoveException e) {
-                            e.printStackTrace();
+            } else {
+                // Black
+                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getOldPosition().getRow() == 1
+                        && lastMove.getNewPosition().getRow() == 3) {
+                    // We can possibly en passant
+                    ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
+                    try {
+                        enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() + 1, 3));
+                    } catch (InvalidBoardPositionException e) {
+                        // This is fine. It means the pawn to be en passant-ed is on the edge of the board
+                    }
+                    try {
+                        enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() - 1, 3));
+                    } catch (InvalidBoardPositionException e) {
+                        // This is fine. It means the pawn to be en passant-ed is on the edge of the board
+                    }
+                    for (BoardPosition enPassantPosition : enPassantPositions) {
+                        ColouredPiece enPassantPawn = board.getPieceAtPosition(enPassantPosition);
+                        if (enPassantPawn != null && Board.comparePieces(enPassantPawn,
+                                new ColouredPiece(Piece.PAWN, PlayerColour.BLACK))) {
+                            try {
+                                BoardPosition newPosition = new BoardPosition(lastMove.getOldPosition().getColumn(), 2);
+                                String oldPositionCoordinate = enPassantPosition.getStringPosition();
+                                allLegalMoves.add(new Move("En passant", enPassantPawn, newPosition,
+                                        oldPositionCoordinate, lastMove.getNewPosition()));
+                            } catch (InvalidBoardPositionException e) {
+                                // This should never happen
+                                System.out.println("Something's wrong");
+                            } catch (InvalidMoveException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -574,7 +576,7 @@ public class State {
 
 
         // Verify each move is legal
-        moveList = (ArrayList<Move>) moveList.stream().filter(m -> isKingInCheck(executeMoveOnBoard(board, m), turn))
+        allLegalMoves = (ArrayList<Move>) allLegalMoves.stream().filter(m -> !isKingInCheck(executeMoveOnBoard(board, m), turn))
                 .collect(Collectors.toList());
     }
 
