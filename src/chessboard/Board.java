@@ -96,7 +96,8 @@ public class Board {
         return new Board(boardMap);
     }
 
-    // Returns true if this board contains exactly the set of pieces pieces.
+    // Returns true if this board contains exactly the set of pieces pieces. Note by exactly I mean each piece is the
+    // same according to comparePieces.
     public boolean compareBoardWithPieceList(Set<ColouredPiece> pieces) {
         Set<ColouredPiece> boardPieces = getPieces();
         Set<ColouredPiece> otherPieces = new HashSet<>(pieces);
@@ -108,13 +109,35 @@ public class Board {
             // Check if there is a ColouredPiece with the same piece and colour
             // in otherPieces, then remove it if there is
             for (ColouredPiece otherPiece : otherPieces) {
-                if (piece.getColour().equals(otherPiece.getColour()) && piece.getPiece().equals(otherPiece.getPiece())) {
+                if (comparePieces(piece, otherPiece)) {
                     otherPieces.remove(otherPiece);
                     pieceFound = true;
                     break;
                 }
             }
             if (!pieceFound) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Returns true if two pieces are the same colour and type (not the same instance). If either is null, returns false
+    public static boolean comparePieces(ColouredPiece piece, ColouredPiece otherPiece) {
+        if (piece == null || otherPiece == null) {
+            return false;
+        }
+        return piece.getColour().equals(otherPiece.getColour()) && piece.getPiece().equals(otherPiece.getPiece());
+    }
+
+    // More or less an equals method. Used to determine threefold repetition. Doesn't compare pieces by .equals, uses
+    // comparePieces. Unsure if this should be the actual equals method or if that will be problematic. This method is
+    // really shit btw, not sure of any much better ways to do it
+    public boolean sameBoard(Board otherBoard) {
+        // Manually check through every square to make sure they're the same
+        for (BoardPosition position: BoardPosition.allSquares) {
+            if (!((getPieceAtPosition(position) == null && otherBoard.getPieceAtPosition(position) == null)
+                    || (comparePieces(getPieceAtPosition(position), otherBoard.getPieceAtPosition(position))))) {
                 return false;
             }
         }

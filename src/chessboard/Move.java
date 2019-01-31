@@ -32,7 +32,11 @@ public class Move {
     private static BoardPosition queensideCastlePosition;
 
     // A standard piece move
-    public Move(ColouredPiece piece, BoardPosition oldPosition, BoardPosition newPosition, boolean taking) throws InvalidMoveException {
+    // For the sake of ease, this constructor is never used. Its tricky to tell whether two pieces can move to the same
+    // square, so, for the moment at least, instead we just always use the below constructor.
+    /*
+    public Move(ColouredPiece piece, BoardPosition oldPosition, BoardPosition newPosition, boolean taking)
+            throws InvalidMoveException {
         if (piece.getPiece() == Piece.PAWN) {
             throw new InvalidMoveException("Invalid move!");
         }
@@ -44,10 +48,11 @@ public class Move {
         if (taking) {
             this.takePosition = newPosition;
         }
-    }
+    }*/
 
     // Two pieces could move to the same square, or a pawn move
-    public Move(ColouredPiece piece, BoardPosition oldPosition, BoardPosition newPosition, String oldPositionCoordinate, boolean taking) {
+    public Move(ColouredPiece piece, BoardPosition oldPosition, BoardPosition newPosition,
+                String oldPositionCoordinate, boolean taking) {
         this.piece = piece;
         this.oldPosition = oldPosition;
         this.newPosition = newPosition;
@@ -59,11 +64,13 @@ public class Move {
     }
 
     // En passant
-    public Move(String specialMove, ColouredPiece piece, BoardPosition newPosition, String oldPositionCoordinate, BoardPosition takePosition)
+    public Move(String specialMove, ColouredPiece piece, BoardPosition newPosition, String oldPositionCoordinate,
+                BoardPosition takePosition)
             throws InvalidMoveException {
         int takeDirection = piece.getColour() == PlayerColour.WHITE ? 1 : -1;
         try {
-            if (!specialMove.equals("En passant") || piece.getPiece() != Piece.PAWN || !newPosition.equals(takePosition.createAddedPosition(0, takeDirection))) {
+            if (!specialMove.equals("En passant") || piece.getPiece() != Piece.PAWN
+                    || !newPosition.equals(takePosition.createAddedPosition(0, takeDirection))) {
                 throw new InvalidMoveException("Invalid move!");
             }
         } catch (InvalidBoardPositionException e) {
@@ -79,7 +86,8 @@ public class Move {
     }
 
     // Castling
-    public Move(String specialMove, ColouredPiece king, BoardPosition newKingPosition, ColouredPiece rook, BoardPosition newRookPosition) throws InvalidMoveException {
+    public Move(String specialMove, ColouredPiece king, BoardPosition newKingPosition, ColouredPiece rook,
+                BoardPosition newRookPosition) throws InvalidMoveException {
         BoardPosition kingsideCastleRookPosition;
         BoardPosition queensideCastleRookPosition;
         try {
@@ -220,5 +228,9 @@ public class Move {
 
     public ColouredPiece getPromotionTo() {
         return promotionTo;
+    }
+
+    public String getOldPositionCoordinate() {
+        return oldPositionCoordinate;
     }
 }

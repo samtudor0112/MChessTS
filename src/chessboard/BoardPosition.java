@@ -58,6 +58,7 @@ public class BoardPosition {
     // Helper useful board square sets
     public static ArrayList<BoardPosition> lightSquares;
     public static ArrayList<BoardPosition> darkSquares;
+    public static ArrayList<BoardPosition> allSquares;
 
     public int getCoordinatePosition() {
         return 10 * column + row;
@@ -85,6 +86,7 @@ public class BoardPosition {
             for (int column = 0; column < 8; column++) {
                 for (int row = 0; row < 8; row++) {
                     BoardPosition square = new BoardPosition(column, row);
+                    allSquares.add(square);
                     if (column % 2 == 0) {
                         // Even rows are dark squares
                         if (row % 2 == 0) {

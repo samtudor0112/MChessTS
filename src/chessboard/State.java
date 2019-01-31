@@ -2,6 +2,7 @@ package chessboard;
 
 import java.lang.reflect.Array;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -22,6 +23,7 @@ public class State {
     private Board board;
     private PlayerColour turn;
     private int gameStatus;
+    private Board startState;
     private ArrayList<Move> moveList;
     private ArrayList<Move> allLegalMoves;
 
@@ -31,6 +33,7 @@ public class State {
 
     public State(Board board, PlayerColour turn, ArrayList<Move> moveList) {
         this.board = board.clone();
+        this.startState = board.clone();
         this.turn = turn;
         this.moveList = moveList;
         updateCastlingStatuses();
@@ -41,6 +44,7 @@ public class State {
     // Game start state
     public State() {
         board = new Board();
+        startState = new Board();
         turn = PlayerColour.WHITE;
         moveList = new ArrayList<>();
         whiteCastlingStatus = EITHER_CASTLE;
@@ -51,9 +55,10 @@ public class State {
 
     // Called by clone method so executeMove doesn't take forever by having to call updateCastlingStatus(). No need to
     // evaluate status since we're cloning a legal state.
-    private State(Board board, PlayerColour turn, ArrayList<Move> moveList,
+    private State(Board board, Board startState, PlayerColour turn, ArrayList<Move> moveList,
                  int whiteCastlingStatus, int blackCastlingStatus, int gameStatus, ArrayList<Move> allLegalMoves) {
         this.board = board.clone();
+        this.startState = startState;
         this.turn = turn;
         this.moveList = moveList;
         this.whiteCastlingStatus = whiteCastlingStatus;
@@ -62,6 +67,7 @@ public class State {
         this.allLegalMoves = allLegalMoves;
     }
 
+    // Execute a move on a board and returns the new board state. Doesn't modify the original board
     public Board executeMoveOnBoard(Board board, Move move) {
         Board newBoard = board.clone();
         if (move.getSpecialMove() == null) {
@@ -177,7 +183,50 @@ public class State {
             }
         }
 
-        // TODO Threefold repetition and 50 move rule
+        // Threefold repetition
+        // Generate two arrayLists: consisting of all the board states throughout the game, for each player's turn
+        ArrayList<Board> allBoardStates1 = new ArrayList<>();
+        ArrayList<Board> allBoardStates2 = new ArrayList<>();
+
+        Board tempBoard = startState;
+        allBoardStates1.add(tempBoard);
+        for (int i = 0; i < moveList.size(); i ++) {
+            tempBoard = executeMoveOnBoard(tempBoard, moveList.get(i));
+            if (i % 2 == 0) {
+                allBoardStates2.add(tempBoard);
+            } else {
+                allBoardStates1.add(tempBoard);
+            }
+        }
+
+        HashMap<Board, Integer> allBoardCount1 = (HashMap<Board, Integer>) allBoardStates1.stream().collect(Collectors.toMap(Function.identity(), b -> 1));
+        HashMap<Board, Integer> allBoardCount2 = (HashMap<Board, Integer>) allBoardStates2.stream().collect(Collectors.toMap(Function.identity(), b -> 1));
+
+        for (Board board1: allBoardStates1) {
+            for (Board board2: allBoardStates1) {
+                if (board2 != board1 && board1.sameBoard(board2)) {
+                    allBoardCount1.put(board1, allBoardCount1.get(board1) + 1);
+                }
+            }
+
+            if (allBoardCount1.get(board1) >= 3) {
+                gameStatus = DRAW;
+            }
+        }
+
+        for (Board board1: allBoardStates2) {
+            for (Board board2: allBoardStates2) {
+                if (board2 != board1 && board1.sameBoard(board2)) {
+                    allBoardCount2.put(board1, allBoardCount2.get(board1) + 1);
+                }
+            }
+
+            if (allBoardCount2.get(board1) >= 3) {
+                gameStatus = DRAW;
+            }
+        }
+
+        // TODO 50 move rule
 
     }
 
@@ -334,15 +383,224 @@ public class State {
     // moves (though this problem is tricky)
     private void updateLegalMoves() {
         moveList = new ArrayList<>();
-        // TODO
-        // Regular moves
-        // Castling
-        // Promotion
-        // En pessant
 
-        // TODO
+        // Regular moves
+        for (ColouredPiece piece: board.getPieces(turn)) {
+            BoardPosition oldPosition = board.getPiecesPosition(piece);
+            String oldPositionCoordinate = oldPosition.getStringPosition();
+            for (BoardPosition newPosition: getValidMovePositions(board, piece)) {
+                boolean taking = board.getPieceAtPosition(newPosition) != null;
+                moveList.add(new Move(piece, oldPosition, newPosition, oldPositionCoordinate, taking));
+            }
+        }
+
+        // Castling
+        // Can only castle while not in check
+        if (!isKingInCheck(board, turn)) {
+            // Determine all the squares attacked by opposing pieces to check if we can castle.
+            ArrayList<BoardPosition> allAttackedSquares = new ArrayList<>();
+            for (ColouredPiece piece : board.getPieces(PlayerColour.getOtherColour(turn))) {
+                allAttackedSquares.addAll(getAttackedSquares(board, piece));
+            }
+
+            BoardPosition castlingSquareOne;
+            BoardPosition castlingSquareTwo;
+            BoardPosition castlingSquareThree;
+            BoardPosition oldKingPosition;
+            BoardPosition newKingPosition;
+            BoardPosition oldRookPosition;
+            BoardPosition newRookPosition;
+            try {
+                if (turn.equals(PlayerColour.WHITE)) {
+                    // Kingside
+                    if (whiteCastlingStatus == EITHER_CASTLE || whiteCastlingStatus == KINGSIDE_CASTLE) {
+                        castlingSquareOne = new BoardPosition(5, 0);
+                        castlingSquareTwo = new BoardPosition(6, 0);
+                        oldKingPosition = new BoardPosition(4, 0);
+                        newKingPosition = new BoardPosition(6, 0);
+                        oldRookPosition = new BoardPosition(7, 0);
+                        newRookPosition = new BoardPosition(5, 0);
+                        Move castle = verifyAndMakeCastleMove(new ArrayList<>(Arrays.asList(castlingSquareOne,
+                                castlingSquareTwo)), board, allAttackedSquares, oldKingPosition, newKingPosition,
+                                oldRookPosition, newRookPosition);
+                        if (castle != null) {
+                            moveList.add(castle);
+                        }
+                    }
+                    // Queenside
+                    if (whiteCastlingStatus == EITHER_CASTLE || whiteCastlingStatus == QUEENSIDE_CASTLE) {
+                        castlingSquareOne = new BoardPosition(1, 0);
+                        castlingSquareTwo = new BoardPosition(2, 0);
+                        castlingSquareThree = new BoardPosition(3, 0);
+                        oldKingPosition = new BoardPosition(4, 0);
+                        newKingPosition = new BoardPosition(2, 0);
+                        oldRookPosition = new BoardPosition(0, 0);
+                        newRookPosition = new BoardPosition(3, 0);
+                        Move castle = verifyAndMakeCastleMove(new ArrayList<>(Arrays.asList(castlingSquareOne,
+                                castlingSquareTwo, castlingSquareThree)), board, allAttackedSquares, oldKingPosition,
+                                newKingPosition, oldRookPosition, newRookPosition);
+                        if (castle != null) {
+                            moveList.add(castle);
+                        }
+                    }
+                } else {
+                    // Black
+                    // Kingside
+                    if (blackCastlingStatus == EITHER_CASTLE || blackCastlingStatus == KINGSIDE_CASTLE) {
+                        castlingSquareOne = new BoardPosition(5, 7);
+                        castlingSquareTwo = new BoardPosition(6, 7);
+                        oldKingPosition = new BoardPosition(4, 7);
+                        newKingPosition = new BoardPosition(6, 7);
+                        oldRookPosition = new BoardPosition(7, 7);
+                        newRookPosition = new BoardPosition(5, 7);
+                        Move castle = verifyAndMakeCastleMove(new ArrayList<>(Arrays.asList(castlingSquareOne,
+                                castlingSquareTwo)), board, allAttackedSquares, oldKingPosition, newKingPosition,
+                                oldRookPosition, newRookPosition);
+                        if (castle != null) {
+                            moveList.add(castle);
+                        }
+                    }
+                    // Queenside
+                    if (blackCastlingStatus == EITHER_CASTLE || blackCastlingStatus == QUEENSIDE_CASTLE) {
+                        castlingSquareOne = new BoardPosition(1, 7);
+                        castlingSquareTwo = new BoardPosition(2, 7);
+                        castlingSquareThree = new BoardPosition(3, 7);
+                        oldKingPosition = new BoardPosition(4, 7);
+                        newKingPosition = new BoardPosition(2, 7);
+                        oldRookPosition = new BoardPosition(0, 7);
+                        newRookPosition = new BoardPosition(3, 7);
+                        Move castle = verifyAndMakeCastleMove(new ArrayList<>(Arrays.asList(castlingSquareOne,
+                                castlingSquareTwo, castlingSquareThree)), board, allAttackedSquares, oldKingPosition,
+                                newKingPosition, oldRookPosition, newRookPosition);
+                        if (castle != null) {
+                            moveList.add(castle);
+                        }
+                    }
+                }
+            } catch (InvalidBoardPositionException e) {
+                // This should never happen
+                System.out.println("Something's wrong");
+            }
+        }
+
+        // Promotion
+        for (Move move: moveList) {
+            if (move.getColouredPiece().getPiece().equals(Piece.PAWN)
+                    && (move.getNewPosition().getRow() == 0 || move.getNewPosition().getRow() == 7)) {
+                // Remove this invalid move from the list and replace it with promotions
+                moveList.remove(move);
+                ArrayList<Piece> validPromotes = new ArrayList<>(Arrays.asList(Piece.BISHOP, Piece.KNIGHT, Piece.QUEEN, Piece.ROOK));
+                for (Piece newPiece: validPromotes) {
+                    try {
+                        moveList.add(new Move("Promoting", move.getColouredPiece(), move.getNewPosition(),
+                                move.getOldPositionCoordinate(), move.isTaking(), new ColouredPiece(newPiece, turn)));
+                    } catch (InvalidMoveException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }
+
+        // En passant
+        Move lastMove = moveList.get(moveList.size() - 1);
+        if (turn.equals(PlayerColour.WHITE)) {
+            if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getOldPosition().getRow() == 6
+                    && lastMove.getNewPosition().getRow() == 4) {
+                // We can possibly en passant
+                ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
+                try {
+                    enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() + 1,4));
+                } catch (InvalidBoardPositionException e) {
+                    // This is fine. It means the pawn to be en passant-ed is on the edge of the board
+                }
+                try {
+                    enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() - 1,4));
+                } catch (InvalidBoardPositionException e) {
+                    // This is fine. It means the pawn to be en passant-ed is on the edge of the board
+                }
+                for (BoardPosition enPassantPosition : enPassantPositions) {
+                    ColouredPiece enPassantPawn = board.getPieceAtPosition(enPassantPosition);
+                    if (enPassantPawn != null && Board.comparePieces(enPassantPawn,
+                            new ColouredPiece(Piece.PAWN, PlayerColour.WHITE))) {
+                        try {
+                            BoardPosition newPosition = new BoardPosition(lastMove.getOldPosition().getColumn(), 5);
+                            String oldPositionCoordinate = enPassantPosition.getStringPosition();
+                            moveList.add(new Move("En passant", enPassantPawn, newPosition,
+                                    oldPositionCoordinate, lastMove.getNewPosition()));
+                        } catch (InvalidBoardPositionException e) {
+                            // This should never happen
+                            System.out.println("Something's wrong");
+                        } catch (InvalidMoveException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        } else {
+            // Black
+            if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getOldPosition().getRow() == 1
+                    && lastMove.getNewPosition().getRow() == 3) {
+                // We can possibly en passant
+                ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
+                try {
+                    enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() + 1,3));
+                } catch (InvalidBoardPositionException e) {
+                    // This is fine. It means the pawn to be en passant-ed is on the edge of the board
+                }
+                try {
+                    enPassantPositions.add(new BoardPosition(lastMove.getOldPosition().getColumn() - 1,3));
+                } catch (InvalidBoardPositionException e) {
+                    // This is fine. It means the pawn to be en passant-ed is on the edge of the board
+                }
+                for (BoardPosition enPassantPosition : enPassantPositions) {
+                    ColouredPiece enPassantPawn = board.getPieceAtPosition(enPassantPosition);
+                    if (enPassantPawn != null && Board.comparePieces(enPassantPawn,
+                            new ColouredPiece(Piece.PAWN, PlayerColour.BLACK))) {
+                        try {
+                            BoardPosition newPosition = new BoardPosition(lastMove.getOldPosition().getColumn(), 2);
+                            String oldPositionCoordinate = enPassantPosition.getStringPosition();
+                            moveList.add(new Move("En passant", enPassantPawn, newPosition,
+                                    oldPositionCoordinate, lastMove.getNewPosition()));
+                        } catch (InvalidBoardPositionException e) {
+                            // This should never happen
+                            System.out.println("Something's wrong");
+                        } catch (InvalidMoveException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+
+
         // Verify each move is legal
-        moveList = (ArrayList<Move>) moveList.stream().filter(m -> isKingInCheck(executeMoveOnBoard(board, m), turn)).collect(Collectors.toList());
+        moveList = (ArrayList<Move>) moveList.stream().filter(m -> isKingInCheck(executeMoveOnBoard(board, m), turn))
+                .collect(Collectors.toList());
+    }
+
+    // Helper function to determine if the squares between the rook and king while castling are empty and not attacked.
+    // If the castle is valid, create the corresponding move object. A complete array of the attacked squares has
+    // already been generated for us
+    private static Move verifyAndMakeCastleMove(ArrayList<BoardPosition> castlingSquares, Board board,
+                                                ArrayList<BoardPosition> attackedSquares,
+                                                BoardPosition oldKingPosition, BoardPosition newKingPosition,
+                                                BoardPosition oldRookPosition, BoardPosition newRookPosition) {
+        // Verify the castle is valid
+        for (BoardPosition position: castlingSquares) {
+            if (board.getPieceAtPosition(position) != null || attackedSquares.contains(position)) {
+                return null;
+            }
+        }
+
+        // Generate the move
+        ColouredPiece king = board.getPieceAtPosition(oldKingPosition);
+        ColouredPiece rook = board.getPieceAtPosition(oldRookPosition);
+        try {
+            return new Move("Castling", king, newKingPosition, rook, newRookPosition);
+        } catch (InvalidMoveException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // Will return if colour's king is in check
@@ -382,35 +640,41 @@ public class State {
         return attackedPieces;
     }
 
-    // Will return any squares a piece can move to, including takes. Doesn't consider whether this will place it's own
-    // king in check. Doesn't include enpessant for pawns, but does include forward moves. Doesn't including castling.
-    // Does including moving pawns to the last rank.
-    private static ArrayList<BoardPosition> getValidMovePositions(Board board, ColouredPiece piece) {
-        ArrayList<BoardPosition> movePositions = new ArrayList<>();
+    // Will return the list of squares attacked by this piece. Used to check castling and useful in the future for
+    // non-pseudo move generation
+    private static ArrayList<BoardPosition> getAttackedSquares(Board board, ColouredPiece piece) {
+        ArrayList<BoardPosition> attackedSquares = new ArrayList<>();
         for (ArrayList<BoardPosition> attackRoute : piece.getAttackRoutes()) {
             for (BoardPosition relativePosition: attackRoute) {
                 try {
                     BoardPosition actualPosition = relativePosition.createAddedPosition(board.getPiecesPosition(piece));
                     ColouredPiece attackedPiece = board.getPieceAtPosition(actualPosition);
                     if (attackedPiece != null) {
-                        // Once one position has a piece in it, the remainder of the positions in the attackroute
-                        // cannot be moved to
+                        // Once one position has a piece in it, the remainder of the positions in the attackroute are
+                        // not attacked
                         if (!attackedPiece.getColour().equals(piece.getColour())) {
-                            // Other coloured piece, we can move here but not the rest of the attackroute
-                            movePositions.add(actualPosition);
-                            break;
-                        } else {
-                            // Own coloured piece, can't move here
-                            break;
+                            attackedSquares.add(actualPosition);
                         }
+                        break;
                     }
-                    movePositions.add(actualPosition);
+
+                    attackedSquares.add(actualPosition);
+
                 } catch (InvalidBoardPositionException e) {
                     // The attack route is off the board. No need to check the rest
                     break;
                 }
             }
         }
+        return attackedSquares;
+    }
+
+    // Will return any squares a piece can move to, including takes. Doesn't consider whether this will place it's own
+    // king in check. Doesn't include enpessant for pawns, but does include forward moves. Doesn't including castling.
+    // Does including moving pawns to the last rank.
+    private static ArrayList<BoardPosition> getValidMovePositions(Board board, ColouredPiece piece) {
+        // Valid move positions are the same as attacked squares except for pawn movements.
+        ArrayList<BoardPosition> movePositions = getAttackedSquares(board, piece);
         // Need to manually add pawn movements cuz pawns are dumb
         if (piece.getPiece().equals(Piece.PAWN)) {
             BoardPosition forwardOne = null;
@@ -464,7 +728,7 @@ public class State {
     }
 
     public State clone() {
-        return new State(board, turn, moveList, whiteCastlingStatus, blackCastlingStatus, gameStatus, allLegalMoves);
+        return new State(board, startState, turn, moveList, whiteCastlingStatus, blackCastlingStatus, gameStatus, allLegalMoves);
     }
 
     // Should only be used by executeMove
