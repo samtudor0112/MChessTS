@@ -260,8 +260,8 @@ public class State {
                 }
 
                 if (move.getColouredPiece().getPiece() == Piece.ROOK) {
-                    // Can't kingside castle if you move the rook on a8
-                    if (move.getOldPosition() == new BoardPosition(0, 7)) {
+                    // Can't kingside castle if you move the rook on h1
+                    if (move.getOldPosition().equals(new BoardPosition(7, 0))) {
                         if (whiteCastlingStatus == KINGSIDE_CASTLE) {
                             whiteCastlingStatus = NO_CASTLE;
                             return;
@@ -271,7 +271,7 @@ public class State {
                         }
                     }
                     // Can't queenside castle if you move the rook on a1
-                    if (move.getOldPosition() == new BoardPosition(0, 0)) {
+                    if (move.getOldPosition().equals(new BoardPosition(0, 0))) {
                         if (whiteCastlingStatus == QUEENSIDE_CASTLE) {
                             whiteCastlingStatus = NO_CASTLE;
                             return;
@@ -283,7 +283,7 @@ public class State {
                 }
 
                 // Opposition can't kingside castle if you take their rook on h8
-                if (move.getTakePosition() == new BoardPosition(7, 7)) {
+                if (move.getTakePosition().equals(new BoardPosition(7, 7))) {
                     if (blackCastlingStatus == KINGSIDE_CASTLE) {
                         blackCastlingStatus = NO_CASTLE;
                         return;
@@ -293,8 +293,8 @@ public class State {
                     }
                 }
 
-                // Opposition can't queenside castle if you take their rook on h1
-                if (move.getTakePosition() == new BoardPosition(7, 0)) {
+                // Opposition can't queenside castle if you take their rook on a8
+                if (move.getTakePosition().equals(new BoardPosition(0, 7))) {
                     if (blackCastlingStatus == QUEENSIDE_CASTLE) {
                         blackCastlingStatus = NO_CASTLE;
                         return;
@@ -325,7 +325,7 @@ public class State {
 
                 if (move.getColouredPiece().getPiece() == Piece.ROOK) {
                     // Can't kingside castle if you move the rook on h8
-                    if (move.getOldPosition() == new BoardPosition(7, 7)) {
+                    if (move.getOldPosition().equals(new BoardPosition(7, 7))) {
                         if (blackCastlingStatus == KINGSIDE_CASTLE) {
                             blackCastlingStatus = NO_CASTLE;
                             return;
@@ -334,8 +334,8 @@ public class State {
                             return;
                         }
                     }
-                    // Can't queenside castle if you move the rook on h1
-                    if (move.getOldPosition() == new BoardPosition(7, 0)) {
+                    // Can't queenside castle if you move the rook on a8
+                    if (move.getOldPosition().equals(new BoardPosition(0, 7))) {
                         if (blackCastlingStatus == QUEENSIDE_CASTLE) {
                             blackCastlingStatus = NO_CASTLE;
                             return;
@@ -346,8 +346,8 @@ public class State {
                     }
                 }
 
-                // Opposition can't kingside castle if you take their rook on a8
-                if (move.getTakePosition() == new BoardPosition(0, 7)) {
+                // Opposition can't kingside castle if you take their rook on h1
+                if (move.getTakePosition().equals(new BoardPosition(7, 0))) {
                     if (whiteCastlingStatus == KINGSIDE_CASTLE) {
                         whiteCastlingStatus = NO_CASTLE;
                         return;
@@ -358,7 +358,7 @@ public class State {
                 }
 
                 // Opposition can't queenside castle if you take their rook on a1
-                if (move.getTakePosition() == new BoardPosition(0, 0)) {
+                if (move.getTakePosition().equals(new BoardPosition(0, 0))) {
                     if (whiteCastlingStatus == QUEENSIDE_CASTLE) {
                         whiteCastlingStatus = NO_CASTLE;
                         return;
@@ -387,7 +387,7 @@ public class State {
         // Regular moves
         for (ColouredPiece piece: board.getPieces(turn)) {
             BoardPosition oldPosition = board.getPiecesPosition(piece);
-            String oldPositionCoordinate = oldPosition.getStringPosition();
+            String oldPositionCoordinate = oldPosition.toString();
             for (BoardPosition newPosition: getValidMovePositions(board, piece)) {
                 boolean taking = board.getPieceAtPosition(newPosition) != null;
                 allLegalMoves.add(new Move(piece, oldPosition, newPosition, oldPositionCoordinate, taking));
@@ -488,7 +488,7 @@ public class State {
         }
 
         // Promotion
-        for (Move move: allLegalMoves) {
+        for (Move move: (ArrayList<Move>) allLegalMoves.clone()) {
             if (move.getColouredPiece().getPiece().equals(Piece.PAWN)
                     && (move.getNewPosition().getRow() == 0 || move.getNewPosition().getRow() == 7)) {
                 // Remove this invalid move from the list and replace it with promotions
@@ -509,7 +509,8 @@ public class State {
         if (moveList.size() > 0) {
             Move lastMove = moveList.get(moveList.size() - 1);
             if (turn.equals(PlayerColour.WHITE)) {
-                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getOldPosition().getRow() == 6
+                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && !lastMove.getSpecialMove()
+                        .equals("Promoting") && lastMove.getOldPosition().getRow() == 6
                         && lastMove.getNewPosition().getRow() == 4) {
                     // We can possibly en passant
                     ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
@@ -529,7 +530,7 @@ public class State {
                                 new ColouredPiece(Piece.PAWN, PlayerColour.WHITE))) {
                             try {
                                 BoardPosition newPosition = new BoardPosition(lastMove.getOldPosition().getColumn(), 5);
-                                String oldPositionCoordinate = enPassantPosition.getStringPosition();
+                                String oldPositionCoordinate = enPassantPosition.toString();
                                 allLegalMoves.add(new Move("En passant", enPassantPawn, newPosition,
                                         oldPositionCoordinate, lastMove.getNewPosition()));
                             } catch (InvalidBoardPositionException e) {
@@ -543,7 +544,8 @@ public class State {
                 }
             } else {
                 // Black
-                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getOldPosition().getRow() == 1
+                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && !lastMove.getSpecialMove()
+                        .equals("Promoting") && lastMove.getOldPosition().getRow() == 1
                         && lastMove.getNewPosition().getRow() == 3) {
                     // We can possibly en passant
                     ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
@@ -563,7 +565,7 @@ public class State {
                                 new ColouredPiece(Piece.PAWN, PlayerColour.BLACK))) {
                             try {
                                 BoardPosition newPosition = new BoardPosition(lastMove.getOldPosition().getColumn(), 2);
-                                String oldPositionCoordinate = enPassantPosition.getStringPosition();
+                                String oldPositionCoordinate = enPassantPosition.toString();
                                 allLegalMoves.add(new Move("En passant", enPassantPawn, newPosition,
                                         oldPositionCoordinate, lastMove.getNewPosition()));
                             } catch (InvalidBoardPositionException e) {
@@ -676,12 +678,13 @@ public class State {
     }
 
     // Will return any squares a piece can move to, including takes. Doesn't consider whether this will place it's own
-    // king in check. Doesn't include enpessant for pawns, but does include forward moves. Doesn't including castling.
-    // Does including moving pawns to the last rank.
+    // king in check. Doesn't include enpessant for pawns, but does include forward moves. Doesn't
+    // including castling. Does including moving pawns to the last rank.
     private static ArrayList<BoardPosition> getValidMovePositions(Board board, ColouredPiece piece) {
         ArrayList<BoardPosition> movePositions = new ArrayList<>();
         // Need to manually do pawn movements cuz pawns are dumb
         if (piece.getPiece().equals(Piece.PAWN)) {
+            // Forward movements
             BoardPosition forwardOne = null;
             BoardPosition forwardTwo = null;
             try {
@@ -706,6 +709,15 @@ public class State {
                 movePositions.add(forwardOne);
                 if (forwardTwo != null && board.getPieceAtPosition(forwardTwo) == null) {
                     movePositions.add(forwardTwo);
+                }
+            }
+
+            // Diagonal takes
+            ArrayList<BoardPosition> diagonalTakes = getAttackedSquares(board, piece);
+            for (BoardPosition position: diagonalTakes) {
+                if (board.getPieceAtPosition(position) != null && board.getPieceAtPosition(position).getColour()
+                        .equals(PlayerColour.getOtherColour(piece.getColour()))) {
+                    movePositions.add(position);
                 }
             }
         } else {

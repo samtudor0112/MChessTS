@@ -35,7 +35,7 @@ public class BoardPosition extends RelativeBoardPosition {
         }
     }
 
-    public String getStringPosition() {
+    public String toString() {
         // Convert 0-7 to "a"-"h"
         char columnChar = (char)(column + 97);
         // Convert 0-7 to "1"-"8"

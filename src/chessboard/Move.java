@@ -109,26 +109,34 @@ public class Move {
             return;
         }
         if (!specialMove.equals("Castling") || king.getPiece() != Piece.KING
-                || rook.getPiece()!= Piece.ROOK) {
+                || rook.getPiece() != Piece.ROOK) {
             throw new InvalidMoveException("Invalid move!");
         }
-        if (newKingPosition == kingsideCastlePosition) {
-            if (newRookPosition != kingsideCastleRookPosition) {
+        if (newKingPosition.equals(kingsideCastlePosition)) {
+            if (!newRookPosition.equals(kingsideCastleRookPosition)) {
                 throw new InvalidMoveException("Invalid move!");
+            } else {
+                this.specialMove = specialMove;
+                this.piece = king;
+                this.newPosition = newKingPosition;
+                this.castlingPiece = rook;
+                this.castlingPosition = newRookPosition;
+                this.taking = false;
             }
-        } else if (newKingPosition == queensideCastlePosition) {
-            if (newRookPosition != queensideCastleRookPosition) {
+        } else if (newKingPosition.equals(queensideCastlePosition)) {
+            if (!newRookPosition.equals(queensideCastleRookPosition)) {
                 throw new InvalidMoveException("Invalid move!");
+            } else {
+                this.specialMove = specialMove;
+                this.piece = king;
+                this.newPosition = newKingPosition;
+                this.castlingPiece = rook;
+                this.castlingPosition = newRookPosition;
+                this.taking = false;
             }
         } else {
             throw new InvalidMoveException("Invalid move!");
         }
-        this.specialMove = specialMove;
-        this.piece = king;
-        this.newPosition = newKingPosition;
-        this.castlingPiece = rook;
-        this.castlingPosition = newRookPosition;
-        this.taking = false;
     }
 
     // Promotion
@@ -148,7 +156,7 @@ public class Move {
         this.promotionTo = promotionTo;
     }
 
-    public String getString() {
+    public String toString() {
         String outString;
         if (specialMove == null) {
             // Standard move
@@ -189,7 +197,7 @@ public class Move {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Move) {
-            return getString().equals(((Move)obj).getString());
+            return toString().equals(((Move)obj).toString());
         }
         return false;
     }

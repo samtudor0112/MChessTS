@@ -24,6 +24,7 @@ public class Node {
 
     public Node(State state) {
         this.state = state;
+        childNodes = new ArrayList<>();
         visits = 0;
         reward = 0;
     }
