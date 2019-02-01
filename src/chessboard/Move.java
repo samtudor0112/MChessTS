@@ -108,9 +108,13 @@ public class Move {
             System.out.println("Something's wrong!");
             return;
         }
-        if (!specialMove.equals("Castling") || king.getPiece() != Piece.KING
-                || rook.getPiece() != Piece.ROOK) {
-            throw new InvalidMoveException("Invalid move!");
+        try {
+            if (!specialMove.equals("Castling") || king.getPiece() != Piece.KING
+                    || rook.getPiece() != Piece.ROOK) {
+                throw new InvalidMoveException("Invalid move!");
+            }
+        } catch (NullPointerException e) {
+            System.out.println("test");
         }
         if (newKingPosition.equals(kingsideCastlePosition)) {
             if (!newRookPosition.equals(kingsideCastleRookPosition)) {
@@ -158,7 +162,7 @@ public class Move {
 
     public String toString() {
         String outString;
-        if (specialMove == null) {
+        if (specialMove.equals("")) {
             // Standard move
             outString = piece.getPiece().firstLetter;
             if (oldPositionCoordinate != null) {
@@ -175,7 +179,7 @@ public class Move {
                 // Queenside
                 outString = "O-O-O";
             }
-        } else if (specialMove.equals("Promotion")){
+        } else if (specialMove.equals("Promoting")){
             // Promoting
             outString = oldPositionCoordinate;
             if (taking) {

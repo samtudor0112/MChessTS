@@ -70,7 +70,7 @@ public class State {
     // Execute a move on a board and returns the new board state. Doesn't modify the original board
     public Board executeMoveOnBoard(Board board, Move move) {
         Board newBoard = board.clone();
-        if (move.getSpecialMove() == "") {
+        if (move.getSpecialMove().equals("")) {
             newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
         } else if (move.getSpecialMove().equals("En passant")) {
             newBoard.moveAndTakePiece(move.getColouredPiece(), move.getTakePosition());
@@ -79,7 +79,7 @@ public class State {
             newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
             newBoard.moveAndTakePiece(move.getCastlingPiece(), move.getCastlingPosition());
         } else {
-            // promotion
+            // promoting
             newBoard.moveAndTakePiece(move.getColouredPiece(), move.getNewPosition());
             newBoard.replacePieceAtPosition(move.getPromotionTo(), move.getNewPosition());
         }
@@ -283,7 +283,10 @@ public class State {
                 }
 
                 // Opposition can't kingside castle if you take their rook on h8
-                if (move.getTakePosition().equals(new BoardPosition(7, 7))) {
+                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(7, 7))) {
+                    if (blackCastlingStatus == NO_CASTLE) {
+                        return;
+                    }
                     if (blackCastlingStatus == KINGSIDE_CASTLE) {
                         blackCastlingStatus = NO_CASTLE;
                         return;
@@ -294,7 +297,10 @@ public class State {
                 }
 
                 // Opposition can't queenside castle if you take their rook on a8
-                if (move.getTakePosition().equals(new BoardPosition(0, 7))) {
+                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(0, 7))) {
+                    if (blackCastlingStatus == NO_CASTLE) {
+                        return;
+                    }
                     if (blackCastlingStatus == QUEENSIDE_CASTLE) {
                         blackCastlingStatus = NO_CASTLE;
                         return;
@@ -347,7 +353,10 @@ public class State {
                 }
 
                 // Opposition can't kingside castle if you take their rook on h1
-                if (move.getTakePosition().equals(new BoardPosition(7, 0))) {
+                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(7, 0))) {
+                    if (whiteCastlingStatus == NO_CASTLE) {
+                        return;
+                    }
                     if (whiteCastlingStatus == KINGSIDE_CASTLE) {
                         whiteCastlingStatus = NO_CASTLE;
                         return;
@@ -358,7 +367,10 @@ public class State {
                 }
 
                 // Opposition can't queenside castle if you take their rook on a1
-                if (move.getTakePosition().equals(new BoardPosition(0, 0))) {
+                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(0, 0))) {
+                    if (whiteCastlingStatus == NO_CASTLE) {
+                        return;
+                    }
                     if (whiteCastlingStatus == QUEENSIDE_CASTLE) {
                         whiteCastlingStatus = NO_CASTLE;
                         return;
@@ -488,13 +500,13 @@ public class State {
         }
 
         // Promotion
-        for (Move move: (ArrayList<Move>) allLegalMoves.clone()) {
+        for (Move move : (ArrayList<Move>) allLegalMoves.clone()) {
             if (move.getColouredPiece().getPiece().equals(Piece.PAWN)
                     && (move.getNewPosition().getRow() == 0 || move.getNewPosition().getRow() == 7)) {
                 // Remove this invalid move from the list and replace it with promotions
                 allLegalMoves.remove(move);
                 ArrayList<Piece> validPromotes = new ArrayList<>(Arrays.asList(Piece.BISHOP, Piece.KNIGHT, Piece.QUEEN, Piece.ROOK));
-                for (Piece newPiece: validPromotes) {
+                for (Piece newPiece : validPromotes) {
                     try {
                         allLegalMoves.add(new Move("Promoting", move.getColouredPiece(), move.getNewPosition(),
                                 move.getOldPositionCoordinate(), move.isTaking(), new ColouredPiece(newPiece, turn)));
@@ -509,8 +521,8 @@ public class State {
         if (moveList.size() > 0) {
             Move lastMove = moveList.get(moveList.size() - 1);
             if (turn.equals(PlayerColour.WHITE)) {
-                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && !lastMove.getSpecialMove()
-                        .equals("Promoting") && lastMove.getOldPosition().getRow() == 6
+                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getSpecialMove()
+                        .equals("") && lastMove.getOldPosition().getRow() == 6
                         && lastMove.getNewPosition().getRow() == 4) {
                     // We can possibly en passant
                     ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
@@ -544,8 +556,8 @@ public class State {
                 }
             } else {
                 // Black
-                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && !lastMove.getSpecialMove()
-                        .equals("Promoting") && lastMove.getOldPosition().getRow() == 1
+                if (lastMove.getColouredPiece().getPiece().equals(Piece.PAWN) && lastMove.getSpecialMove()
+                        .equals("") && lastMove.getOldPosition().getRow() == 1
                         && lastMove.getNewPosition().getRow() == 3) {
                     // We can possibly en passant
                     ArrayList<BoardPosition> enPassantPositions = new ArrayList<>();
@@ -604,6 +616,9 @@ public class State {
         ColouredPiece king = board.getPieceAtPosition(oldKingPosition);
         ColouredPiece rook = board.getPieceAtPosition(oldRookPosition);
         try {
+            if (king == null || rook == null || king.getPiece() != Piece.KING || rook.getPiece() != Piece.ROOK) {
+                System.out.println("test");
+            }
             return new Move("Castling", king, newKingPosition, rook, newRookPosition);
         } catch (InvalidMoveException e) {
             e.printStackTrace();
