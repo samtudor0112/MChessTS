@@ -70,7 +70,7 @@ public class Move {
         int takeDirection = piece.getColour() == PlayerColour.WHITE ? 1 : -1;
         try {
             if (!specialMove.equals("En passant") || piece.getPiece() != Piece.PAWN
-                    || !newPosition.equals(takePosition.createAddedPosition(0, takeDirection))) {
+                    || !newPosition.equals(takePosition.addRelativePosition(new RelativeBoardPosition(0, takeDirection)))) {
                 throw new InvalidMoveException("Invalid move!");
             }
         } catch (InvalidBoardPositionException e) {

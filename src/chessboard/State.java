@@ -35,7 +35,7 @@ public class State {
         this.board = board.clone();
         this.startState = board.clone();
         this.turn = turn;
-        this.moveList = moveList;
+        this.moveList = (ArrayList<Move>) moveList.clone();
         updateCastlingStatuses();
         updateLegalMoves();
         updateGameStatus();
@@ -58,13 +58,13 @@ public class State {
     private State(Board board, Board startState, PlayerColour turn, ArrayList<Move> moveList,
                  int whiteCastlingStatus, int blackCastlingStatus, int gameStatus, ArrayList<Move> allLegalMoves) {
         this.board = board.clone();
-        this.startState = startState;
+        this.startState = startState.clone();
         this.turn = turn;
-        this.moveList = moveList;
+        this.moveList = (ArrayList<Move>) moveList.clone();
         this.whiteCastlingStatus = whiteCastlingStatus;
         this.blackCastlingStatus = blackCastlingStatus;
         this.gameStatus = gameStatus;
-        this.allLegalMoves = allLegalMoves;
+        this.allLegalMoves = (ArrayList<Move>) allLegalMoves.clone();
     }
 
     // Execute a move on a board and returns the new board state. Doesn't modify the original board
@@ -400,7 +400,11 @@ public class State {
             // Determine all the squares attacked by opposing pieces to check if we can castle.
             ArrayList<BoardPosition> allAttackedSquares = new ArrayList<>();
             for (ColouredPiece piece : board.getPieces(PlayerColour.getOtherColour(turn))) {
-                allAttackedSquares.addAll(getAttackedSquares(board, piece));
+                for (BoardPosition position: getAttackedSquares(board, piece)) {
+                    if (!allAttackedSquares.contains(position)) {
+                        allAttackedSquares.add(position);
+                    }
+                }
             }
 
             BoardPosition castlingSquareOne;
@@ -620,10 +624,10 @@ public class State {
     // Will return the list of pieces attacked by this piece. Doesn't include enpessant for pawns.
     private static ArrayList<ColouredPiece> getAttackedPieces(Board board, ColouredPiece piece) {
         ArrayList<ColouredPiece> attackedPieces = new ArrayList<>();
-        for (ArrayList<BoardPosition> attackRoute : piece.getAttackRoutes()) {
-            for (BoardPosition relativePosition: attackRoute) {
+        for (ArrayList<RelativeBoardPosition> attackRoute : piece.getAttackRoutes()) {
+            for (RelativeBoardPosition relativePosition: attackRoute) {
                 try {
-                    BoardPosition actualPosition = relativePosition.createAddedPosition(board.getPiecesPosition(piece));
+                    BoardPosition actualPosition = board.getPiecesPosition(piece).addRelativePosition(relativePosition);
                     ColouredPiece attackedPiece = board.getPieceAtPosition(actualPosition);
                     if (attackedPiece != null) {
                         // Once one position has a piece in it, the remainder of the positions in the attackroute are
@@ -646,10 +650,10 @@ public class State {
     // non-pseudo move generation
     private static ArrayList<BoardPosition> getAttackedSquares(Board board, ColouredPiece piece) {
         ArrayList<BoardPosition> attackedSquares = new ArrayList<>();
-        for (ArrayList<BoardPosition> attackRoute : piece.getAttackRoutes()) {
-            for (BoardPosition relativePosition: attackRoute) {
+        for (ArrayList<RelativeBoardPosition> attackRoute : piece.getAttackRoutes()) {
+            for (RelativeBoardPosition relativePosition: attackRoute) {
                 try {
-                    BoardPosition actualPosition = relativePosition.createAddedPosition(board.getPiecesPosition(piece));
+                    BoardPosition actualPosition = board.getPiecesPosition(piece).addRelativePosition(relativePosition);
                     ColouredPiece attackedPiece = board.getPieceAtPosition(actualPosition);
                     if (attackedPiece != null) {
                         // Once one position has a piece in it, the remainder of the positions in the attackroute are
@@ -675,23 +679,22 @@ public class State {
     // king in check. Doesn't include enpessant for pawns, but does include forward moves. Doesn't including castling.
     // Does including moving pawns to the last rank.
     private static ArrayList<BoardPosition> getValidMovePositions(Board board, ColouredPiece piece) {
-        // Valid move positions are the same as attacked squares except for pawn movements.
-        ArrayList<BoardPosition> movePositions = getAttackedSquares(board, piece);
-        // Need to manually add pawn movements cuz pawns are dumb
+        ArrayList<BoardPosition> movePositions = new ArrayList<>();
+        // Need to manually do pawn movements cuz pawns are dumb
         if (piece.getPiece().equals(Piece.PAWN)) {
             BoardPosition forwardOne = null;
             BoardPosition forwardTwo = null;
             try {
                 if (piece.getColour().equals(PlayerColour.WHITE)) {
-                    forwardOne = board.getPiecesPosition(piece).createAddedPosition(new BoardPosition(0, 1));
+                    forwardOne = board.getPiecesPosition(piece).addRelativePosition(new RelativeBoardPosition(0, 1));
                     if (board.getPiecesPosition(piece).getRow() == 1) {
-                        forwardTwo = board.getPiecesPosition(piece).createAddedPosition(new BoardPosition(0, 2));
+                        forwardTwo = board.getPiecesPosition(piece).addRelativePosition(new RelativeBoardPosition(0, 2));
                     }
                 } else {
                     // Black
-                    forwardOne = board.getPiecesPosition(piece).createAddedPosition(new BoardPosition(0, -1));
+                    forwardOne = board.getPiecesPosition(piece).addRelativePosition(new RelativeBoardPosition(0, -1));
                     if (board.getPiecesPosition(piece).getRow() == 6) {
-                        forwardTwo = board.getPiecesPosition(piece).createAddedPosition(new BoardPosition(0, -2));
+                        forwardTwo = board.getPiecesPosition(piece).addRelativePosition(new RelativeBoardPosition(0, -2));
                     }
                 }
             } catch (InvalidBoardPositionException e) {
@@ -705,6 +708,9 @@ public class State {
                     movePositions.add(forwardTwo);
                 }
             }
+        } else {
+            // Valid move positions are the same as attacked squares except for pawns
+            movePositions = getAttackedSquares(board, piece);
         }
         return movePositions;
     }

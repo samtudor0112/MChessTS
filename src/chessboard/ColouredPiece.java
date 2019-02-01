@@ -11,7 +11,7 @@ public class ColouredPiece {
     private Piece piece;
     private PlayerColour colour;
 
-    private ArrayList<ArrayList<BoardPosition>> attackRoutes = new ArrayList<>();
+    private ArrayList<ArrayList<RelativeBoardPosition>> attackRoutes = new ArrayList<>();
 
     public ColouredPiece(Piece piece, PlayerColour colour) {
         this.piece = piece;
@@ -27,7 +27,7 @@ public class ColouredPiece {
         return colour;
     }
 
-    public ArrayList<ArrayList<BoardPosition>> getAttackRoutes() {
+    public ArrayList<ArrayList<RelativeBoardPosition>> getAttackRoutes() {
         // I'm really not sure what's going on here but hopefully the attack routes are unmodifiable. This entire class
         // is designed to be immutable.
         return new ArrayList<>(Collections.unmodifiableList(attackRoutes));
@@ -37,36 +37,36 @@ public class ColouredPiece {
     // of an attack route is either invalid (off the board) or a capture, the rest of the attacks are no longer valid
     public void generateAttackRoutes() {
         try {
-            ArrayList<BoardPosition> route1;
-            ArrayList<BoardPosition> route2;
-            ArrayList<BoardPosition> route3;
-            ArrayList<BoardPosition> route4;
-            ArrayList<BoardPosition> route5;
-            ArrayList<BoardPosition> route6;
-            ArrayList<BoardPosition> route7;
-            ArrayList<BoardPosition> route8;
+            ArrayList<RelativeBoardPosition> route1;
+            ArrayList<RelativeBoardPosition> route2;
+            ArrayList<RelativeBoardPosition> route3;
+            ArrayList<RelativeBoardPosition> route4;
+            ArrayList<RelativeBoardPosition> route5;
+            ArrayList<RelativeBoardPosition> route6;
+            ArrayList<RelativeBoardPosition> route7;
+            ArrayList<RelativeBoardPosition> route8;
             switch (piece) {
                 case PAWN:
                     if (colour == PlayerColour.WHITE) {
-                        route1 = new ArrayList<>(Arrays.asList(new BoardPosition(1, 1)));
-                        route2 = new ArrayList<>(Arrays.asList(new BoardPosition(-1, 1)));
+                        route1 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(1, 1)));
+                        route2 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-1, 1)));
                     } else {
                         // Black
-                        route1 = new ArrayList<>(Arrays.asList(new BoardPosition(1, -1)));
-                        route2 = new ArrayList<>(Arrays.asList(new BoardPosition(-1, -1)));
+                        route1 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(1, -1)));
+                        route2 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-1, -1)));
                     }
                     attackRoutes.add(route1);
                     attackRoutes.add(route2);
                     return;
                 case KNIGHT:
-                    route1 = new ArrayList<>(Arrays.asList(new BoardPosition(1, 2)));
-                    route2 = new ArrayList<>(Arrays.asList(new BoardPosition(2, 1)));
-                    route3 = new ArrayList<>(Arrays.asList(new BoardPosition(-1, 2)));
-                    route4 = new ArrayList<>(Arrays.asList(new BoardPosition(-2, 1)));
-                    route5 = new ArrayList<>(Arrays.asList(new BoardPosition(1, -2)));
-                    route6 = new ArrayList<>(Arrays.asList(new BoardPosition(2, -1)));
-                    route7 = new ArrayList<>(Arrays.asList(new BoardPosition(-1, -2)));
-                    route8 = new ArrayList<>(Arrays.asList(new BoardPosition(-2, -1)));
+                    route1 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(1, 2)));
+                    route2 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(2, 1)));
+                    route3 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-1, 2)));
+                    route4 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-2, 1)));
+                    route5 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(1, -2)));
+                    route6 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(2, -1)));
+                    route7 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-1, -2)));
+                    route8 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-2, -1)));
                     attackRoutes.add(route1);
                     attackRoutes.add(route2);
                     attackRoutes.add(route3);
@@ -82,10 +82,10 @@ public class ColouredPiece {
                     route3 = new ArrayList<>();
                     route4 = new ArrayList<>();
                     for (int i = 1; i <= 7; i++) {
-                        route1.add(new BoardPosition(i, i));
-                        route2.add(new BoardPosition(i, -i));
-                        route3.add(new BoardPosition(-i, i));
-                        route4.add(new BoardPosition(-i, -i));
+                        route1.add(new RelativeBoardPosition(i, i));
+                        route2.add(new RelativeBoardPosition(i, -i));
+                        route3.add(new RelativeBoardPosition(-i, i));
+                        route4.add(new RelativeBoardPosition(-i, -i));
                     }
                     attackRoutes.add(route1);
                     attackRoutes.add(route2);
@@ -98,10 +98,10 @@ public class ColouredPiece {
                     route3 = new ArrayList<>();
                     route4 = new ArrayList<>();
                     for (int i = 1; i <= 7; i++) {
-                        route1.add(new BoardPosition(i, 0));
-                        route2.add(new BoardPosition(0, i));
-                        route3.add(new BoardPosition(-i, 0));
-                        route4.add(new BoardPosition(0, -i));
+                        route1.add(new RelativeBoardPosition(i, 0));
+                        route2.add(new RelativeBoardPosition(0, i));
+                        route3.add(new RelativeBoardPosition(-i, 0));
+                        route4.add(new RelativeBoardPosition(0, -i));
                     }
                     attackRoutes.add(route1);
                     attackRoutes.add(route2);
@@ -118,14 +118,14 @@ public class ColouredPiece {
                     route7 = new ArrayList<>();
                     route8 = new ArrayList<>();
                     for (int i = 1; i <= 7; i++) {
-                        route1.add(new BoardPosition(i, i));
-                        route2.add(new BoardPosition(i, -i));
-                        route3.add(new BoardPosition(-i, i));
-                        route4.add(new BoardPosition(-i, -i));
-                        route5.add(new BoardPosition(i, 0));
-                        route6.add(new BoardPosition(0, i));
-                        route7.add(new BoardPosition(-i, 0));
-                        route8.add(new BoardPosition(0, -i));
+                        route1.add(new RelativeBoardPosition(i, i));
+                        route2.add(new RelativeBoardPosition(i, -i));
+                        route3.add(new RelativeBoardPosition(-i, i));
+                        route4.add(new RelativeBoardPosition(-i, -i));
+                        route5.add(new RelativeBoardPosition(i, 0));
+                        route6.add(new RelativeBoardPosition(0, i));
+                        route7.add(new RelativeBoardPosition(-i, 0));
+                        route8.add(new RelativeBoardPosition(0, -i));
                     }
                     attackRoutes.add(route1);
                     attackRoutes.add(route2);
@@ -137,14 +137,14 @@ public class ColouredPiece {
                     attackRoutes.add(route8);
                     return;
                 case KING:
-                    route1 = new ArrayList<>(Arrays.asList(new BoardPosition(1, 0)));
-                    route2 = new ArrayList<>(Arrays.asList(new BoardPosition(1, 1)));
-                    route3 = new ArrayList<>(Arrays.asList(new BoardPosition(0, 1)));
-                    route4 = new ArrayList<>(Arrays.asList(new BoardPosition(-1, 1)));
-                    route5 = new ArrayList<>(Arrays.asList(new BoardPosition(-1, 0)));
-                    route6 = new ArrayList<>(Arrays.asList(new BoardPosition(-1, -1)));
-                    route7 = new ArrayList<>(Arrays.asList(new BoardPosition(0, -1)));
-                    route8 = new ArrayList<>(Arrays.asList(new BoardPosition(1, -1)));
+                    route1 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(1, 0)));
+                    route2 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(1, 1)));
+                    route3 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(0, 1)));
+                    route4 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-1, 1)));
+                    route5 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-1, 0)));
+                    route6 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(-1, -1)));
+                    route7 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(0, -1)));
+                    route8 = new ArrayList<>(Arrays.asList(new RelativeBoardPosition(1, -1)));
                     attackRoutes.add(route1);
                     attackRoutes.add(route2);
                     attackRoutes.add(route3);

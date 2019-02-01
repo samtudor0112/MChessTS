@@ -5,15 +5,10 @@ import java.util.ArrayList;
 /**
  * Represents a position on a chess board
  */
-public class BoardPosition {
-
-    // 0-7
-    private int row;
-    private int column;
-
+public class BoardPosition extends RelativeBoardPosition {
 
     public BoardPosition(int column, int row) throws InvalidBoardPositionException {
-        setBoardPosition(column, row);
+        super(column, row);
     }
 
     public BoardPosition(String pos) throws InvalidBoardPositionException {
@@ -29,7 +24,9 @@ public class BoardPosition {
         setBoardPosition(column, row);
     }
 
-    private void setBoardPosition(int column, int row) throws InvalidBoardPositionException {
+    @Override
+    protected void setBoardPosition(int column, int row) throws InvalidBoardPositionException {
+        // Row and column are 0 to 7 instead of -7 to 7
         if ((0 <= row && row < 8) && (0 <= column && column < 8)) {
             this.row = row;
             this.column = column;
@@ -40,19 +37,15 @@ public class BoardPosition {
 
     public String getStringPosition() {
         // Convert 0-7 to "a"-"h"
-        char column = (char)(row + 61);
+        char columnChar = (char)(column + 97);
         // Convert 0-7 to "1"-"8"
-        char row = (char)(column + 31);
+        char rowChar = (char)(row + 49);
 
-        return Character.toString(column) + Character.toString(row);
+        return Character.toString(columnChar) + Character.toString(rowChar);
     }
 
-    public BoardPosition createAddedPosition(int deltacolumn, int deltarow) throws InvalidBoardPositionException {
-        return new BoardPosition(column + deltacolumn, row + deltarow);
-    }
-
-    public BoardPosition createAddedPosition(BoardPosition position) throws InvalidBoardPositionException {
-        return createAddedPosition(position.getColumn(), position.getRow());
+    public BoardPosition addRelativePosition(RelativeBoardPosition position) throws InvalidBoardPositionException {
+        return new BoardPosition(column + position.getColumn(), row + position.getRow());
     }
 
     // Helper useful board square sets
