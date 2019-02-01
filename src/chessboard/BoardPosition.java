@@ -17,9 +17,9 @@ public class BoardPosition extends RelativeBoardPosition {
         }
 
         // Convert "a"-"h" to 0-7
-        int column = (int) pos.charAt(0) - 61;
+        int column = (int) pos.charAt(0) - 97;
         // Convert "1"-"8" to 0-7
-        int row = (int) pos.charAt(1) - 31;
+        int row = (int) pos.charAt(1) - 49;
 
         setBoardPosition(column, row);
     }

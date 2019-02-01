@@ -760,10 +760,154 @@ public class State {
     public Move getMoveFromString(String stringMove) throws InvalidMoveException {
         Move move = null;
         if (turn == PlayerColour.WHITE) {
-            // TODO
+            // Castling
+            if (stringMove.equals("O-O")) {
+                try {
+                    ColouredPiece king = board.getPieceAtPosition(new BoardPosition(4, 0));
+                    ColouredPiece rook = board.getPieceAtPosition(new BoardPosition(7, 0));
+                    move = new Move("Castling", king, new BoardPosition(6, 0), rook, new BoardPosition(5, 0));
+                } catch (InvalidBoardPositionException e) {
+                    // This should never happen
+                    System.out.println("Something's wrong");
+                }
+            } else if (stringMove.equals("O-O-O")) {
+                try {
+                    ColouredPiece king = board.getPieceAtPosition(new BoardPosition(4, 0));
+                    ColouredPiece rook = board.getPieceAtPosition(new BoardPosition(0, 0));
+                    move = new Move("Castling", king, new BoardPosition(2, 0), rook, new BoardPosition(3, 0));
+                } catch (InvalidBoardPositionException e) {
+                    // This should never happen
+                    System.out.println("Something's wrong");
+                }
+            } else if (stringMove.length() > 4) {
+                if (stringMove.length() == 5) {
+                    // Promoting
+                    try {
+                        BoardPosition oldPosition = new BoardPosition(stringMove.substring(0, 2));
+                        BoardPosition newPosition = new BoardPosition(stringMove.substring(2, 4));
+                        ColouredPiece pawn = board.getPieceAtPosition(oldPosition);
+                        boolean taking = board.getPieceAtPosition(newPosition) != null;
+                        ColouredPiece promotedTo;
+                        switch (stringMove.substring(5)) {
+                            case "N":
+                                promotedTo = new ColouredPiece(Piece.KNIGHT, PlayerColour.WHITE);
+                                break;
+                            case "B":
+                                promotedTo = new ColouredPiece(Piece.BISHOP, PlayerColour.WHITE);
+                                break;
+                            case "R":
+                                promotedTo = new ColouredPiece(Piece.ROOK, PlayerColour.WHITE);
+                                break;
+                            case "Q":
+                                promotedTo = new ColouredPiece(Piece.QUEEN, PlayerColour.WHITE);
+                                break;
+                            default:
+                                throw new InvalidMoveException("Invalid move!");
+                        }
+                        move = new Move("Promoting", pawn, newPosition, stringMove.substring(0, 2), taking, promotedTo);
+                    } catch (InvalidBoardPositionException e) {
+                        throw new InvalidMoveException("Invalid move!");
+                    }
+                } else {
+                    // En passant
+                    try {
+                        BoardPosition oldPosition = new BoardPosition(stringMove.substring(0, 2));
+                        BoardPosition newPosition = new BoardPosition(stringMove.substring(2, 4));
+                        BoardPosition takePosition = newPosition.addRelativePosition(new RelativeBoardPosition(0, -1));
+                        ColouredPiece pawn = board.getPieceAtPosition(oldPosition);
+
+                        move = new Move("En pessant", pawn, newPosition, stringMove.substring(0, 2), takePosition);
+                    } catch (InvalidBoardPositionException e) {
+                        throw new InvalidMoveException("Invalid move!");
+                    }
+                }
+            } else {
+                // Regular move
+                try {
+                    BoardPosition oldPosition = new BoardPosition(stringMove.substring(0, 2));
+                    BoardPosition newPosition = new BoardPosition(stringMove.substring(2, 4));
+                    ColouredPiece piece = board.getPieceAtPosition(oldPosition);
+                    boolean taking = board.getPieceAtPosition(newPosition) != null;
+                    move = new Move(piece, oldPosition, newPosition, stringMove.substring(0, 2), taking);
+                } catch (InvalidBoardPositionException e) {
+                    throw new InvalidMoveException("Invalid move!");
+                }
+            }
         } else {
             // Black
-            // TODO
+            // Castling
+            if (stringMove.equals("O-O")) {
+                try {
+                    ColouredPiece king = board.getPieceAtPosition(new BoardPosition(4, 7));
+                    ColouredPiece rook = board.getPieceAtPosition(new BoardPosition(7, 7));
+                    move = new Move("Castling", king, new BoardPosition(6, 7), rook, new BoardPosition(5, 7));
+                } catch (InvalidBoardPositionException e) {
+                    // This should never happen
+                    System.out.println("Something's wrong");
+                }
+            } else if (stringMove.equals("O-O-O")) {
+                try {
+                    ColouredPiece king = board.getPieceAtPosition(new BoardPosition(4, 7));
+                    ColouredPiece rook = board.getPieceAtPosition(new BoardPosition(0, 7));
+                    move = new Move("Castling", king, new BoardPosition(2, 7), rook, new BoardPosition(3, 7));
+                } catch (InvalidBoardPositionException e) {
+                    // This should never happen
+                    System.out.println("Something's wrong");
+                }
+            } else if (stringMove.length() > 4) {
+                if (stringMove.length() == 5) {
+                    // Promoting
+                    try {
+                        BoardPosition oldPosition = new BoardPosition(stringMove.substring(0, 2));
+                        BoardPosition newPosition = new BoardPosition(stringMove.substring(2, 4));
+                        ColouredPiece pawn = board.getPieceAtPosition(oldPosition);
+                        boolean taking = board.getPieceAtPosition(newPosition) != null;
+                        ColouredPiece promotedTo;
+                        switch (stringMove.substring(5)) {
+                            case "N":
+                                promotedTo = new ColouredPiece(Piece.KNIGHT, PlayerColour.BLACK);
+                                break;
+                            case "B":
+                                promotedTo = new ColouredPiece(Piece.BISHOP, PlayerColour.BLACK);
+                                break;
+                            case "R":
+                                promotedTo = new ColouredPiece(Piece.ROOK, PlayerColour.BLACK);
+                                break;
+                            case "Q":
+                                promotedTo = new ColouredPiece(Piece.QUEEN, PlayerColour.BLACK);
+                                break;
+                            default:
+                                throw new InvalidMoveException("Invalid move!");
+                        }
+                        move = new Move("Promoting", pawn, newPosition, stringMove.substring(0, 2), taking, promotedTo);
+                    } catch (InvalidBoardPositionException e) {
+                        throw new InvalidMoveException("Invalid move!");
+                    }
+                } else {
+                    // En passant
+                    try {
+                        BoardPosition oldPosition = new BoardPosition(stringMove.substring(0, 2));
+                        BoardPosition newPosition = new BoardPosition(stringMove.substring(2, 4));
+                        BoardPosition takePosition = newPosition.addRelativePosition(new RelativeBoardPosition(0, 1));
+                        ColouredPiece pawn = board.getPieceAtPosition(oldPosition);
+
+                        move = new Move("En pessant", pawn, newPosition, stringMove.substring(0, 2), takePosition);
+                    } catch (InvalidBoardPositionException e) {
+                        throw new InvalidMoveException("Invalid move!");
+                    }
+                }
+            } else {
+                // Regular move
+                try {
+                    BoardPosition oldPosition = new BoardPosition(stringMove.substring(0, 2));
+                    BoardPosition newPosition = new BoardPosition(stringMove.substring(2, 4));
+                    ColouredPiece piece = board.getPieceAtPosition(oldPosition);
+                    boolean taking = board.getPieceAtPosition(newPosition) != null;
+                    move = new Move(piece, oldPosition, newPosition, stringMove.substring(0, 2), taking);
+                } catch (InvalidBoardPositionException e) {
+                    throw new InvalidMoveException("Invalid move!");
+                }
+            }
         }
         if (getAllLegalMoves().contains(move)) {
             return move;

@@ -31,7 +31,7 @@ public class Main {
             // Take in the remaining time as an input
             int timeRemaining = takeInTimeInput();
             // Time per move is maximum of 15 seconds or 5% of remaining time
-            int timeToUse = Math.max(15000, 50 * timeRemaining);
+            int timeToUse = Math.min(15000, 50 * timeRemaining);
 
             // Search for the best move
             MCTS search = new MCTS(currentState, timeToUse, ourColour);
