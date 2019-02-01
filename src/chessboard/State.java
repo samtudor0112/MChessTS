@@ -242,6 +242,28 @@ public class State {
             // The only way a player can no longer castle is by moving their rook, moving their king or by having their
             // rook taken.
             if (move.getColouredPiece().getColour() == PlayerColour.WHITE) {
+                // Opposition can't kingside castle if you take their rook on h8
+                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(7, 7))) {
+                    if (blackCastlingStatus == NO_CASTLE) {
+                        // Nothing to do
+                    } else if (blackCastlingStatus == KINGSIDE_CASTLE) {
+                        blackCastlingStatus = NO_CASTLE;
+                    } else {
+                        blackCastlingStatus = QUEENSIDE_CASTLE;
+                    }
+                }
+
+                // Opposition can't queenside castle if you take their rook on a8
+                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(0, 7))) {
+                    if (blackCastlingStatus == NO_CASTLE) {
+                        // Nothing to do
+                    } else if (blackCastlingStatus == QUEENSIDE_CASTLE) {
+                        blackCastlingStatus = NO_CASTLE;
+                    } else {
+                        blackCastlingStatus = KINGSIDE_CASTLE;
+                    }
+                }
+
                 if (whiteCastlingStatus == NO_CASTLE) {
                     // Can't ever castle if you couldn't previously
                     return;
@@ -281,37 +303,32 @@ public class State {
                         }
                     }
                 }
-
-                // Opposition can't kingside castle if you take their rook on h8
-                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(7, 7))) {
-                    if (blackCastlingStatus == NO_CASTLE) {
-                        return;
-                    }
-                    if (blackCastlingStatus == KINGSIDE_CASTLE) {
-                        blackCastlingStatus = NO_CASTLE;
-                        return;
-                    } else {
-                        blackCastlingStatus = QUEENSIDE_CASTLE;
-                        return;
-                    }
-                }
-
-                // Opposition can't queenside castle if you take their rook on a8
-                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(0, 7))) {
-                    if (blackCastlingStatus == NO_CASTLE) {
-                        return;
-                    }
-                    if (blackCastlingStatus == QUEENSIDE_CASTLE) {
-                        blackCastlingStatus = NO_CASTLE;
-                        return;
-                    } else {
-                        blackCastlingStatus = KINGSIDE_CASTLE;
-                        return;
-                    }
-                }
-
             } else {
                 // black
+
+                // Opposition can't kingside castle if you take their rook on h1
+                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(7, 0))) {
+                    if (whiteCastlingStatus == NO_CASTLE) {
+                        // Nothing to do
+                    } else if (whiteCastlingStatus == KINGSIDE_CASTLE) {
+                        whiteCastlingStatus = NO_CASTLE;
+                    } else {
+                        whiteCastlingStatus = QUEENSIDE_CASTLE;
+                    }
+                }
+
+                // Opposition can't queenside castle if you take their rook on a1
+                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(0, 0))) {
+                    if (whiteCastlingStatus == NO_CASTLE) {
+                        // Nothing to do
+                    }
+                    else if (whiteCastlingStatus == QUEENSIDE_CASTLE) {
+                        whiteCastlingStatus = NO_CASTLE;
+                    } else {
+                        whiteCastlingStatus = KINGSIDE_CASTLE;
+                    }
+                }
+
                 if (blackCastlingStatus == NO_CASTLE) {
                     // Can't ever castle if you couldn't previously
                     return;
@@ -349,34 +366,6 @@ public class State {
                             blackCastlingStatus = KINGSIDE_CASTLE;
                             return;
                         }
-                    }
-                }
-
-                // Opposition can't kingside castle if you take their rook on h1
-                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(7, 0))) {
-                    if (whiteCastlingStatus == NO_CASTLE) {
-                        return;
-                    }
-                    if (whiteCastlingStatus == KINGSIDE_CASTLE) {
-                        whiteCastlingStatus = NO_CASTLE;
-                        return;
-                    } else {
-                        whiteCastlingStatus = QUEENSIDE_CASTLE;
-                        return;
-                    }
-                }
-
-                // Opposition can't queenside castle if you take their rook on a1
-                if (move.isTaking() && move.getTakePosition().equals(new BoardPosition(0, 0))) {
-                    if (whiteCastlingStatus == NO_CASTLE) {
-                        return;
-                    }
-                    if (whiteCastlingStatus == QUEENSIDE_CASTLE) {
-                        whiteCastlingStatus = NO_CASTLE;
-                        return;
-                    } else {
-                        whiteCastlingStatus = KINGSIDE_CASTLE;
-                        return;
                     }
                 }
             }
@@ -616,9 +605,6 @@ public class State {
         ColouredPiece king = board.getPieceAtPosition(oldKingPosition);
         ColouredPiece rook = board.getPieceAtPosition(oldRookPosition);
         try {
-            if (king == null || rook == null || king.getPiece() != Piece.KING || rook.getPiece() != Piece.ROOK) {
-                System.out.println("test");
-            }
             return new Move("Castling", king, newKingPosition, rook, newRookPosition);
         } catch (InvalidMoveException e) {
             e.printStackTrace();

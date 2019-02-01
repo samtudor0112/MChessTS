@@ -108,13 +108,9 @@ public class Move {
             System.out.println("Something's wrong!");
             return;
         }
-        try {
-            if (!specialMove.equals("Castling") || king.getPiece() != Piece.KING
-                    || rook.getPiece() != Piece.ROOK) {
-                throw new InvalidMoveException("Invalid move!");
-            }
-        } catch (NullPointerException e) {
-            System.out.println("test");
+        if (!specialMove.equals("Castling") || king.getPiece() != Piece.KING
+                || rook.getPiece() != Piece.ROOK) {
+            throw new InvalidMoveException("Invalid move!");
         }
         if (newKingPosition.equals(kingsideCastlePosition)) {
             if (!newRookPosition.equals(kingsideCastleRookPosition)) {
